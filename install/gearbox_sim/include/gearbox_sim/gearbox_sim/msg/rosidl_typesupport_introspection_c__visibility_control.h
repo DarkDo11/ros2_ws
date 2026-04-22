@@ -1,0 +1,1 @@
+/home/dark/ros2_ws/build/gearbox_sim/rosidl_typesupport_introspection_c/gearbox_sim/msg/rosidl_typesupport_introspection_c__visibility_control.h

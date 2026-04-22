@@ -1,0 +1,271 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="gearbox_gazebo">
+
+  <xacro:arg name="name" default="gearbox_base"/>
+  <xacro:arg name="variant" default="base"/>
+  <xacro:arg name="mesh_scale" default="0.002"/>
+  <xacro:arg name="mu1" default="0.9"/>
+  <xacro:arg name="mu2" default="0.9"/>
+  <xacro:arg name="kp" default="2.0e5"/>
+  <xacro:arg name="kd" default="250.0"/>
+  <xacro:arg name="include_planets_in_base" default="true"/>
+  <xacro:arg name="include_carrier_in_base" default="true"/>
+
+  <xacro:property name="scale" value="${float('$(arg mesh_scale)')}"/>
+  <xacro:property name="geom_factor" value="${scale / 0.001}"/>
+  <xacro:property name="mass_factor" value="${geom_factor * geom_factor * geom_factor}"/>
+  <xacro:property name="variant" value="'$(arg variant)'"/>
+  <xacro:property name="is_base" value="${variant == 'base'}"/>
+  <xacro:property name="is_sun" value="${variant == 'sun'}"/>
+  <xacro:property name="is_planet" value="${variant == 'planet'}"/>
+  <xacro:property name="is_carrier" value="${variant == 'carrier'}"/>
+  <xacro:property name="base_has_carrier" value="${'$(arg include_carrier_in_base)' == 'true'}"/>
+  <xacro:property name="planet_1_yaw" value="0.130899694"/>
+  <xacro:property name="planet_2_yaw" value="-0.916297857"/>
+  <xacro:property name="planet_3_yaw" value="-1.963495408"/>
+
+  <material name="grey">
+    <color rgba="0.75 0.75 0.75 1.0"/>
+  </material>
+  <material name="blue">
+    <color rgba="0.10 0.20 0.85 1.0"/>
+  </material>
+  <material name="green">
+    <color rgba="0.05 0.75 0.10 1.0"/>
+  </material>
+  <material name="red">
+    <color rgba="0.85 0.10 0.10 1.0"/>
+  </material>
+  <material name="fixture_dark">
+    <color rgba="0.20 0.20 0.20 1.0"/>
+  </material>
+
+  <xacro:macro name="cylinder_inertia" params="mass radius length">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+        ixx="${(1.0 / 12.0) * mass * (3.0 * radius * radius + length * length)}"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="${(1.0 / 12.0) * mass * (3.0 * radius * radius + length * length)}"
+        iyz="0.0"
+        izz="${0.5 * mass * radius * radius}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="box_inertia" params="mass x y z">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+        ixx="${(1.0 / 12.0) * mass * (y * y + z * z)}"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="${(1.0 / 12.0) * mass * (x * x + z * z)}"
+        iyz="0.0"
+        izz="${(1.0 / 12.0) * mass * (x * x + y * y)}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="gazebo_contact" params="reference">
+    <gazebo reference="${reference}">
+      <mu1>$(arg mu1)</mu1>
+      <mu2>$(arg mu2)</mu2>
+      <kp>$(arg kp)</kp>
+      <kd>$(arg kd)</kd>
+      <selfCollide>false</selfCollide>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="ring_collision_mesh" params="">
+    <collision>
+      <origin xyz="${-0.032847 * geom_factor} ${-0.032825 * geom_factor} 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="file://$(find gearbox_sim)/meshes/ring_gear.STL" scale="${scale} ${scale} ${scale}"/>
+      </geometry>
+    </collision>
+  </xacro:macro>
+
+  <xacro:macro name="planet_collision_mesh" params="">
+    <collision>
+      <origin xyz="${-0.013051 * geom_factor} ${-0.013051 * geom_factor} 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="file://$(find gearbox_sim)/meshes/planet_gear.STL" scale="${scale} ${scale} ${scale}"/>
+      </geometry>
+    </collision>
+  </xacro:macro>
+
+  <xacro:macro name="sun_collision_mesh" params="">
+    <collision>
+      <origin xyz="${-0.006872 * geom_factor} ${-0.006872 * geom_factor} ${-0.030400 * geom_factor}" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="file://$(find gearbox_sim)/meshes/satellite.STL" scale="${scale} ${scale} ${scale}"/>
+      </geometry>
+    </collision>
+  </xacro:macro>
+
+  <xacro:macro name="carrier_collision_mesh" params="">
+    <collision>
+      <origin xyz="${-0.023319 * geom_factor} ${0.025755 * geom_factor} ${0.084267 * geom_factor}" rpy="3.14159 0 0"/>
+      <geometry>
+        <mesh filename="file://$(find gearbox_sim)/meshes/carrier.STL" scale="${scale} ${scale} ${scale}"/>
+      </geometry>
+    </collision>
+  </xacro:macro>
+
+  <xacro:if value="${is_base}">
+    <gazebo>
+      <static>true</static>
+    </gazebo>
+
+    <link name="fixture_link">
+      <xacro:box_inertia mass="${0.05 * mass_factor}" x="${0.04 * geom_factor}" y="${0.04 * geom_factor}" z="${0.01 * geom_factor}"/>
+    </link>
+
+    <joint name="ring_joint" type="fixed">
+      <parent link="fixture_link"/>
+      <child link="ring_gear"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="ring_gear">
+      <xacro:cylinder_inertia mass="${1.20 * mass_factor}" radius="${0.0325 * geom_factor}" length="${0.010 * geom_factor}"/>
+      <visual>
+        <origin xyz="${-0.032847 * geom_factor} ${-0.032825 * geom_factor} 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find gearbox_sim)/meshes/ring_gear.STL" scale="${scale} ${scale} ${scale}"/>
+        </geometry>
+        <material name="grey"/>
+      </visual>
+      <xacro:ring_collision_mesh/>
+    </link>
+    <xacro:gazebo_contact reference="ring_gear"/>
+
+    <xacro:if value="${base_has_carrier}">
+      <joint name="carrier_joint" type="fixed">
+        <parent link="fixture_link"/>
+        <child link="carrier"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+      </joint>
+
+      <link name="carrier">
+        <xacro:cylinder_inertia mass="${0.80 * mass_factor}" radius="${0.0260 * geom_factor}" length="${0.052 * geom_factor}"/>
+        <visual>
+          <origin xyz="${-0.023319 * geom_factor} ${0.025755 * geom_factor} ${0.084267 * geom_factor}" rpy="3.14159 0 0"/>
+          <geometry>
+            <mesh filename="file://$(find gearbox_sim)/meshes/carrier.STL" scale="${scale} ${scale} ${scale}"/>
+          </geometry>
+          <material name="green"/>
+        </visual>
+        <xacro:carrier_collision_mesh/>
+      </link>
+      <xacro:gazebo_contact reference="carrier"/>
+    </xacro:if>
+
+    <xacro:if value="$(arg include_planets_in_base)">
+      <joint name="planet_1_joint" type="fixed">
+        <parent link="${'carrier' if base_has_carrier else 'fixture_link'}"/>
+        <child link="planet_1"/>
+        <origin xyz="0 ${0.018000 * geom_factor} 0" rpy="0 0 ${planet_1_yaw}"/>
+      </joint>
+
+      <link name="planet_1">
+        <xacro:cylinder_inertia mass="${0.35 * mass_factor}" radius="${0.0130 * geom_factor}" length="${0.040 * geom_factor}"/>
+        <visual>
+          <origin xyz="${-0.013051 * geom_factor} ${-0.013051 * geom_factor} 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="file://$(find gearbox_sim)/meshes/planet_gear.STL" scale="${scale} ${scale} ${scale}"/>
+          </geometry>
+          <material name="red"/>
+        </visual>
+        <xacro:planet_collision_mesh/>
+      </link>
+      <xacro:gazebo_contact reference="planet_1"/>
+
+      <joint name="planet_2_joint" type="fixed">
+        <parent link="${'carrier' if base_has_carrier else 'fixture_link'}"/>
+        <child link="planet_2"/>
+        <origin xyz="${0.015589 * geom_factor} ${-0.009000 * geom_factor} 0" rpy="0 0 ${planet_2_yaw}"/>
+      </joint>
+
+      <link name="planet_2">
+        <xacro:cylinder_inertia mass="${0.35 * mass_factor}" radius="${0.0130 * geom_factor}" length="${0.040 * geom_factor}"/>
+        <visual>
+          <origin xyz="${-0.013051 * geom_factor} ${-0.013051 * geom_factor} 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="file://$(find gearbox_sim)/meshes/planet_gear.STL" scale="${scale} ${scale} ${scale}"/>
+          </geometry>
+          <material name="red"/>
+        </visual>
+        <xacro:planet_collision_mesh/>
+      </link>
+      <xacro:gazebo_contact reference="planet_2"/>
+
+      <joint name="planet_3_joint" type="fixed">
+        <parent link="${'carrier' if base_has_carrier else 'fixture_link'}"/>
+        <child link="planet_3"/>
+        <origin xyz="${-0.015588 * geom_factor} ${-0.009000 * geom_factor} 0" rpy="0 0 ${planet_3_yaw}"/>
+      </joint>
+
+      <link name="planet_3">
+        <xacro:cylinder_inertia mass="${0.35 * mass_factor}" radius="${0.0130 * geom_factor}" length="${0.040 * geom_factor}"/>
+        <visual>
+          <origin xyz="${-0.013051 * geom_factor} ${-0.013051 * geom_factor} 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="file://$(find gearbox_sim)/meshes/planet_gear.STL" scale="${scale} ${scale} ${scale}"/>
+          </geometry>
+          <material name="red"/>
+        </visual>
+        <xacro:planet_collision_mesh/>
+      </link>
+      <xacro:gazebo_contact reference="planet_3"/>
+    </xacro:if>
+  </xacro:if>
+
+  <xacro:if value="${is_sun}">
+    <link name="sun_gear">
+      <xacro:cylinder_inertia mass="${0.15 * mass_factor}" radius="${0.0070 * geom_factor}" length="${0.040 * geom_factor}"/>
+      <visual>
+        <origin xyz="${-0.006872 * geom_factor} ${-0.006872 * geom_factor} ${-0.030400 * geom_factor}" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find gearbox_sim)/meshes/satellite.STL" scale="${scale} ${scale} ${scale}"/>
+        </geometry>
+        <material name="blue"/>
+      </visual>
+      <xacro:sun_collision_mesh/>
+    </link>
+    <xacro:gazebo_contact reference="sun_gear"/>
+  </xacro:if>
+
+  <xacro:if value="${is_planet}">
+    <link name="planet_gear">
+      <xacro:cylinder_inertia mass="${0.35 * mass_factor}" radius="${0.0130 * geom_factor}" length="${0.040 * geom_factor}"/>
+      <visual>
+        <origin xyz="${-0.013051 * geom_factor} ${-0.013051 * geom_factor} 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find gearbox_sim)/meshes/planet_gear.STL" scale="${scale} ${scale} ${scale}"/>
+        </geometry>
+        <material name="red"/>
+      </visual>
+      <xacro:planet_collision_mesh/>
+    </link>
+    <xacro:gazebo_contact reference="planet_gear"/>
+  </xacro:if>
+
+  <xacro:if value="${is_carrier}">
+    <link name="carrier">
+      <xacro:cylinder_inertia mass="${0.80 * mass_factor}" radius="${0.0260 * geom_factor}" length="${0.052 * geom_factor}"/>
+      <visual>
+        <origin xyz="${-0.023319 * geom_factor} ${0.025755 * geom_factor} ${0.084267 * geom_factor}" rpy="3.14159 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find gearbox_sim)/meshes/carrier.STL" scale="${scale} ${scale} ${scale}"/>
+        </geometry>
+        <material name="green"/>
+      </visual>
+      <xacro:carrier_collision_mesh/>
+    </link>
+    <xacro:gazebo_contact reference="carrier"/>
+  </xacro:if>
+
+</robot>

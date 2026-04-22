@@ -1,0 +1,27 @@
+[0.008s] Invoking command in '/home/dark/ros2_ws/build/gearbox_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/dark/ros2_ws/build/gearbox_sim -- -j8 -l8
+[0.038s] Invoked command in '/home/dark/ros2_ws/build/gearbox_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/dark/ros2_ws/build/gearbox_sim -- -j8 -l8
+[0.045s] Invoking command in '/home/dark/ros2_ws/build/gearbox_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/dark/ros2_ws/build/gearbox_sim
+[0.052s] -- Install configuration: ""
+[0.052s] -- Execute custom install script
+[0.052s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/meshes/carrier.STL
+[0.052s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/meshes/planet_gear.STL
+[0.052s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/meshes/ring_gear.STL
+[0.053s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/meshes/satellite.STL
+[0.053s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/urdf/gearbox.urdf
+[0.053s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/lib/gearbox_sim/animator.py
+[0.053s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/ament_index/resource_index/package_run_dependencies/gearbox_sim
+[0.053s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/ament_index/resource_index/parent_prefix_path/gearbox_sim
+[0.053s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/environment/ament_prefix_path.sh
+[0.053s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/environment/ament_prefix_path.dsv
+[0.053s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/environment/path.sh
+[0.054s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/environment/path.dsv
+[0.054s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/local_setup.bash
+[0.054s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/local_setup.sh
+[0.054s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/local_setup.zsh
+[0.054s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/local_setup.dsv
+[0.054s] -- Symlinking: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/package.dsv
+[0.061s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/ament_index/resource_index/packages/gearbox_sim
+[0.061s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/cmake/gearbox_simConfig.cmake
+[0.062s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/cmake/gearbox_simConfig-version.cmake
+[0.062s] -- Up-to-date symlink: /home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/package.xml
+[0.063s] Invoked command in '/home/dark/ros2_ws/build/gearbox_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/dark/ros2_ws/build/gearbox_sim

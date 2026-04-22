@@ -1,0 +1,104 @@
+robots:
+  ur5e_press:
+    planning_group: ur5e_1_arm
+    trajectory_topic: /ur5e_press/joint_trajectory
+    tool_frame: ur5e_press_tcp_frame
+    reference_frame: world
+    joint_names:
+      - ur5e_press_shoulder_pan_joint
+      - ur5e_press_shoulder_lift_joint
+      - ur5e_press_elbow_joint
+      - ur5e_press_wrist_1_joint
+      - ur5e_press_wrist_2_joint
+      - ur5e_press_wrist_3_joint
+    home_joint_positions:
+      - -1.57
+      - -1.85
+      - 1.92
+      - -1.64
+      - -1.57
+      - 0.0
+    approach_height_m: 0.10
+    insertion_depth_m: 0.03
+  ur5e_assembly:
+    planning_group: ur5e_2_arm
+    trajectory_topic: /ur5e_assembly/joint_trajectory
+    tool_frame: ur5e_assembly_tcp_frame
+    reference_frame: world
+    joint_names:
+      - ur5e_assembly_shoulder_pan_joint
+      - ur5e_assembly_shoulder_lift_joint
+      - ur5e_assembly_elbow_joint
+      - ur5e_assembly_wrist_1_joint
+      - ur5e_assembly_wrist_2_joint
+      - ur5e_assembly_wrist_3_joint
+    home_joint_positions:
+      - -1.20
+      - -1.92
+      - 2.02
+      - -1.68
+      - -1.57
+      - 0.0
+    approach_height_m: 0.08
+    insertion_depth_m: 0.02
+  ur3e_screw:
+    planning_group: ur3e_arm
+    trajectory_topic: /ur3e_screw/joint_trajectory
+    tool_frame: ur3e_screw_tcp_frame
+    reference_frame: world
+    joint_names:
+      - ur3e_screw_shoulder_pan_joint
+      - ur3e_screw_shoulder_lift_joint
+      - ur3e_screw_elbow_joint
+      - ur3e_screw_wrist_1_joint
+      - ur3e_screw_wrist_2_joint
+      - ur3e_screw_wrist_3_joint
+    home_joint_positions:
+      - 1.57
+      - -1.75
+      - 1.98
+      - -1.80
+      - -1.57
+      - 0.0
+    approach_height_m: 0.06
+    insertion_depth_m: 0.015
+
+parts:
+  lower_housing: pallet_a_lower_housing_pick_frame
+  main_bearing: pallet_a_main_bearing_pick_frame
+  cover: pallet_b_cover_pick_frame
+  small_bearing: pallet_b_small_bearing_pick_frame
+  housing: pallet_c_housing_pick_frame
+  ring_gear: pallet_c_ring_gear_pick_frame
+  planet_1: pallet_d_planet_1_pick_frame
+  planet_2: pallet_d_planet_2_pick_frame
+  planet_3: pallet_d_planet_3_pick_frame
+  sun_gear: pallet_d_sun_pick_frame
+  carrier: pallet_d_carrier_pick_frame
+
+part_links:
+  lower_housing: lower_housing_visual
+  main_bearing: main_bearing_visual
+  cover: cover_visual
+  small_bearing: small_bearing_visual
+  housing: housing_visual
+  ring_gear: ring_gear_visual
+  planet_1: planet_1_visual
+  planet_2: planet_2_visual
+  planet_3: planet_3_visual
+  sun_gear: sun_visual
+  carrier: carrier_visual
+
+assembly:
+  screw_frames:
+    - assembly_screw_1_frame
+    - assembly_screw_2_frame
+    - assembly_screw_3_frame
+    - assembly_screw_4_frame
+  output_frame: output_tray_drop_frame
+  feeder_frame: autofeeder_pick_frame
+
+services:
+  press_service: /press/run_cycle
+  screwdriver_action: /ur3e_screw/run_screwdriver
+  attachment_service: /grasp_attacher/set_attachment

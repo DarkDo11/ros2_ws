@@ -1,0 +1,66 @@
+{
+  "type_description_msg": {
+    "type_description": {
+      "type_name": "gearbox_sim/action/RunScrewdriver_GetResult_Response",
+      "fields": [
+        {
+          "name": "status",
+          "type": {
+            "type_id": 2,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": ""
+          },
+          "default_value": ""
+        },
+        {
+          "name": "result",
+          "type": {
+            "type_id": 1,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": "gearbox_sim/action/RunScrewdriver_Result"
+          },
+          "default_value": ""
+        }
+      ]
+    },
+    "referenced_type_descriptions": [
+      {
+        "type_name": "gearbox_sim/action/RunScrewdriver_Result",
+        "fields": [
+          {
+            "name": "success",
+            "type": {
+              "type_id": 15,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          },
+          {
+            "name": "message",
+            "type": {
+              "type_id": 17,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          }
+        ]
+      }
+    ]
+  },
+  "type_hashes": [
+    {
+      "type_name": "gearbox_sim/action/RunScrewdriver_GetResult_Response",
+      "hash_string": "RIHS01_789424ade8cb2a3fcbc8c7314ff772e9df8ee391e4e9285fec0d9833aa429bb0"
+    },
+    {
+      "type_name": "gearbox_sim/action/RunScrewdriver_Result",
+      "hash_string": "RIHS01_5dc342f9bcd41eec670247000c36ffdaef2872b85cad191755d9152fd889fb61"
+    }
+  ]
+}

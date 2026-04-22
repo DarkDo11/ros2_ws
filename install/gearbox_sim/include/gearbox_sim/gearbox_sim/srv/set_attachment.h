@@ -1,0 +1,1 @@
+/home/dark/ros2_ws/build/gearbox_sim/rosidl_generator_c/gearbox_sim/srv/set_attachment.h

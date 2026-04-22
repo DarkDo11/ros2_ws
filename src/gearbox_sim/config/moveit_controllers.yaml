@@ -1,0 +1,43 @@
+moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+
+moveit_simple_controller_manager:
+  controller_names:
+    - ur5e_1_controller
+    - ur5e_2_controller
+    - ur3e_controller
+
+  ur5e_1_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+      - ur5e_press_shoulder_pan_joint
+      - ur5e_press_shoulder_lift_joint
+      - ur5e_press_elbow_joint
+      - ur5e_press_wrist_1_joint
+      - ur5e_press_wrist_2_joint
+      - ur5e_press_wrist_3_joint
+
+  ur5e_2_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+      - ur5e_assembly_shoulder_pan_joint
+      - ur5e_assembly_shoulder_lift_joint
+      - ur5e_assembly_elbow_joint
+      - ur5e_assembly_wrist_1_joint
+      - ur5e_assembly_wrist_2_joint
+      - ur5e_assembly_wrist_3_joint
+
+  ur3e_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+      - ur3e_screw_shoulder_pan_joint
+      - ur3e_screw_shoulder_lift_joint
+      - ur3e_screw_elbow_joint
+      - ur3e_screw_wrist_1_joint
+      - ur3e_screw_wrist_2_joint
+      - ur3e_screw_wrist_3_joint

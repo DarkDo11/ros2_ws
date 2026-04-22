@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "gearbox_sim__py",
+		"source" : "/home/dark/ros2_ws/build/gearbox_sim/gearbox_sim__py"
+	}
+}

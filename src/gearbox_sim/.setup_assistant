@@ -1,0 +1,6 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: gearbox_sim
+    relative_path: urdf/main_scene.urdf.xacro
+  srdf:
+    relative_path: config/assembly_cell.srdf

@@ -1,0 +1,8 @@
+{
+  "package_name": "gearbox_sim",
+  "non_idl_tuples": [
+    "/home/dark/ros2_ws/src/gearbox_sim:action/RunScrewdriver.action",
+    "/home/dark/ros2_ws/src/gearbox_sim:srv/RunPressCycle.srv",
+    "/home/dark/ros2_ws/src/gearbox_sim:srv/SetAttachment.srv"
+  ]
+}

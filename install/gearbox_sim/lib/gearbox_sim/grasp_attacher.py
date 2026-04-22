@@ -1,0 +1,1 @@
+/home/dark/ros2_ws/src/gearbox_sim/scripts/grasp_attacher.py

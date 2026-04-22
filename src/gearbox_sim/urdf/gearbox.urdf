@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<robot name="planetary_gearbox">
+
+  <!-- Материалы -->
+  <material name="grey"><color rgba="0.7 0.7 0.7 1.0"/></material>
+  <material name="blue"><color rgba="0.0 0.0 0.8 1.0"/></material>
+  <material name="red"><color rgba="0.8 0.0 0.0 1.0"/></material>
+  <material name="green"><color rgba="0.0 0.8 0.0 1.0"/></material>
+
+  <!-- Базовое звено (Мир) -->
+  <link name="base_link"/>
+
+  <!-- КОРОНА (ring_gear.STL) -->
+  <joint name="ring_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="ring_gear"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="ring_gear">
+    <visual>
+      <!-- Совмещаем ось короны с началом координат -->
+      <origin xyz="-0.032847 -0.032825 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://gearbox_sim/meshes/ring_gear.STL" scale="0.001 0.001 0.001"/></geometry>
+      <material name="grey"/>
+    </visual>
+  </link>
+
+  <!-- СОЛНЦЕ (satellite.STL) -->
+  <joint name="sun_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="sun_gear"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/> <!-- Ось вращения Z (синяя) -->
+    <limit effort="10.0" velocity="10.0" lower="-6.28" upper="6.28"/>
+  </joint>
+
+  <link name="sun_gear">
+    <visual>
+      <!-- Возвращаем солнце в исходную ориентацию, сохраняя плоскость зацепления -->
+      <origin xyz="-0.006872 -0.006872 -0.030400" rpy="0 0 0"/>
+      <geometry><mesh filename="package://gearbox_sim/meshes/satellite.STL" scale="0.001 0.001 0.001"/></geometry>
+      <material name="blue"/>
+    </visual>
+  </link>
+
+  <!-- ВОДИЛО (carrier.STL) -->
+  <joint name="carrier_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="carrier"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/> <!-- Ось вращения Z (синяя) -->
+    <limit effort="10.0" velocity="10.0" lower="-6.28" upper="6.28"/>
+  </joint>
+
+  <link name="carrier">
+    <visual>
+      <!-- Поворот водила и стык к резьбе сателлита -->
+      <origin xyz="-0.023319 0.025755 0.084267" rpy="3.14159 0 0"/>
+      <geometry><mesh filename="package://gearbox_sim/meshes/carrier.STL" scale="0.001 0.001 0.001"/></geometry>
+      <material name="green"/>
+    </visual>
+  </link>
+
+  <!-- САТЕЛЛИТ (planet_gear.STL) -->
+  <joint name="planet_1_joint" type="revolute">
+    <parent link="carrier"/>
+    <child link="planet_1"/>
+    <!-- После переворота водила отверстия зеркалим по Y -->
+    <origin xyz="0 0.018000 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/> <!-- Ось вращения Z (синяя) -->
+    <limit effort="1.0" velocity="10.0" lower="-6.28" upper="6.28"/>
+  </joint>
+
+  <link name="planet_1">
+    <visual>
+      <!-- У планеты зубья уже начинаются от z=0, поэтому компенсируем только ось вращения -->
+      <origin xyz="-0.013051 -0.013051 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://gearbox_sim/meshes/planet_gear.STL" scale="0.001 0.001 0.001"/></geometry>
+      <material name="red"/>
+    </visual>
+  </link>
+
+  <joint name="planet_2_joint" type="revolute">
+    <parent link="carrier"/>
+    <child link="planet_2"/>
+    <origin xyz="0.015589 -0.009000 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1.0" velocity="10.0" lower="-6.28" upper="6.28"/>
+  </joint>
+
+  <link name="planet_2">
+    <visual>
+      <origin xyz="-0.013051 -0.013051 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://gearbox_sim/meshes/planet_gear.STL" scale="0.001 0.001 0.001"/></geometry>
+      <material name="red"/>
+    </visual>
+  </link>
+
+  <joint name="planet_3_joint" type="revolute">
+    <parent link="carrier"/>
+    <child link="planet_3"/>
+    <origin xyz="-0.015588 -0.009000 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1.0" velocity="10.0" lower="-6.28" upper="6.28"/>
+  </joint>
+
+  <link name="planet_3">
+    <visual>
+      <origin xyz="-0.013051 -0.013051 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://gearbox_sim/meshes/planet_gear.STL" scale="0.001 0.001 0.001"/></geometry>
+      <material name="red"/>
+    </visual>
+  </link>
+
+</robot>

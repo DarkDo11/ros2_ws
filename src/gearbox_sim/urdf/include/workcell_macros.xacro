@@ -1,0 +1,545 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="workcell_macros">
+
+  <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
+
+  <material name="steel_dark">
+    <color rgba="0.20 0.22 0.25 1.0"/>
+  </material>
+  <material name="steel_light">
+    <color rgba="0.78 0.80 0.82 1.0"/>
+  </material>
+  <material name="safety_yellow">
+    <color rgba="0.97 0.80 0.16 1.0"/>
+  </material>
+  <material name="fixture_blue">
+    <color rgba="0.12 0.34 0.66 1.0"/>
+  </material>
+  <material name="surface_gray">
+    <color rgba="0.65 0.67 0.70 1.0"/>
+  </material>
+  <material name="camera_black">
+    <color rgba="0.12 0.12 0.12 1.0"/>
+  </material>
+
+  <xacro:macro name="box_inertia" params="mass x y z">
+    <inertia
+      ixx="${mass * (y * y + z * z) / 12.0}"
+      ixy="0.0"
+      ixz="0.0"
+      iyy="${mass * (x * x + z * z) / 12.0}"
+      iyz="0.0"
+      izz="${mass * (x * x + y * y) / 12.0}"/>
+  </xacro:macro>
+
+  <xacro:macro name="cylinder_inertia" params="mass radius length">
+    <inertia
+      ixx="${mass * (3.0 * radius * radius + length * length) / 12.0}"
+      ixy="0.0"
+      ixz="0.0"
+      iyy="${mass * (3.0 * radius * radius + length * length) / 12.0}"
+      iyz="0.0"
+      izz="${0.5 * mass * radius * radius}"/>
+  </xacro:macro>
+
+  <xacro:macro name="fixed_frame" params="parent name xyz rpy radius:=0.008 length:=0.030">
+    <link name="${name}">
+      <visual>
+        <origin xyz="0 0 ${0.5 * length}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${radius}" length="${length}"/>
+        </geometry>
+        <material name="fixture_blue"/>
+      </visual>
+    </link>
+    <joint name="${name}_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${name}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="box_link" params="parent name xyz rpy size mass material_name">
+    <link name="${name}">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="${mass}"/>
+        <xacro:box_inertia mass="${mass}" x="${size[0]}" y="${size[1]}" z="${size[2]}"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${size[0]} ${size[1]} ${size[2]}"/>
+        </geometry>
+        <material name="${material_name}"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${size[0]} ${size[1]} ${size[2]}"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${name}_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${name}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="table_station" params="parent prefix xyz rpy size height material_name:=surface_gray">
+    <xacro:box_link parent="${parent}" name="${prefix}_top"
+                    xyz="${xyz[0]} ${xyz[1]} ${xyz[2]}" rpy="${rpy}"
+                    size="${size}" mass="65.0" material_name="${material_name}"/>
+    <xacro:box_link parent="${parent}" name="${prefix}_leg_fl"
+                    xyz="${xyz[0] + 0.5 * size[0] - 0.04} ${xyz[1] + 0.5 * size[1] - 0.04} ${0.5 * height}"
+                    rpy="0 0 0" size="${[0.08, 0.08, height]}" mass="8.0" material_name="steel_dark"/>
+    <xacro:box_link parent="${parent}" name="${prefix}_leg_fr"
+                    xyz="${xyz[0] + 0.5 * size[0] - 0.04} ${xyz[1] - 0.5 * size[1] + 0.04} ${0.5 * height}"
+                    rpy="0 0 0" size="${[0.08, 0.08, height]}" mass="8.0" material_name="steel_dark"/>
+    <xacro:box_link parent="${parent}" name="${prefix}_leg_rl"
+                    xyz="${xyz[0] - 0.5 * size[0] + 0.04} ${xyz[1] + 0.5 * size[1] - 0.04} ${0.5 * height}"
+                    rpy="0 0 0" size="${[0.08, 0.08, height]}" mass="8.0" material_name="steel_dark"/>
+    <xacro:box_link parent="${parent}" name="${prefix}_leg_rr"
+                    xyz="${xyz[0] - 0.5 * size[0] + 0.04} ${xyz[1] - 0.5 * size[1] + 0.04} ${0.5 * height}"
+                    rpy="0 0 0" size="${[0.08, 0.08, height]}" mass="8.0" material_name="steel_dark"/>
+    <xacro:fixed_frame parent="${parent}" name="${prefix}_frame"
+                       xyz="${xyz[0]} ${xyz[1]} ${xyz[2] + 0.5 * size[2]}" rpy="0 0 0"/>
+  </xacro:macro>
+
+  <xacro:macro name="pallet_station" params="parent prefix xyz rpy">
+    <xacro:box_link parent="${parent}" name="${prefix}_body"
+                    xyz="${xyz[0]} ${xyz[1]} ${xyz[2]}" rpy="${rpy}"
+                    size="${[0.22, 0.16, 0.12]}" mass="4.0" material_name="safety_yellow"/>
+    <xacro:fixed_frame parent="${parent}" name="${prefix}_surface_frame"
+                       xyz="${xyz[0]} ${xyz[1]} ${xyz[2] + 0.07}" rpy="${rpy}"/>
+  </xacro:macro>
+
+  <xacro:macro name="camera_stub" params="parent prefix xyz rpy topic width:=1280 height:=960 fov:=1.05">
+    <link name="${prefix}_camera_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.6"/>
+        <xacro:box_inertia mass="0.6" x="0.10" y="0.05" z="0.05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.10 0.05 0.05"/>
+        </geometry>
+        <material name="camera_black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.10 0.05 0.05"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}_camera_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}_camera_link"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+    <gazebo reference="${prefix}_camera_link">
+      <sensor name="${prefix}_camera_sensor" type="camera">
+        <always_on>true</always_on>
+        <update_rate>15.0</update_rate>
+        <topic>${topic}</topic>
+        <camera>
+          <horizontal_fov>${fov}</horizontal_fov>
+          <image>
+            <width>${width}</width>
+            <height>${height}</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>6.0</far>
+          </clip>
+        </camera>
+        <visualize>true</visualize>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="joint_state_plugin" params="joint_state_topic joint_names">
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>${joint_state_topic}</topic>
+      <xacro:insert_block name="joint_names"/>
+    </plugin>
+  </xacro:macro>
+
+  <xacro:macro name="ur_robot_motion_plugins"
+               params="prefix joint_state_topic trajectory_topic
+                       shoulder_pan_init shoulder_lift_init elbow_init
+                       wrist_1_init wrist_2_init wrist_3_init">
+    <gazebo>
+      <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+        <topic>${joint_state_topic}</topic>
+        <joint_name>${prefix}shoulder_pan_joint</joint_name>
+        <joint_name>${prefix}shoulder_lift_joint</joint_name>
+        <joint_name>${prefix}elbow_joint</joint_name>
+        <joint_name>${prefix}wrist_1_joint</joint_name>
+        <joint_name>${prefix}wrist_2_joint</joint_name>
+        <joint_name>${prefix}wrist_3_joint</joint_name>
+      </plugin>
+
+      <plugin filename="gz-sim-joint-trajectory-controller-system" name="gz::sim::systems::JointTrajectoryController">
+        <topic>${trajectory_topic}</topic>
+        <joint_name>${prefix}shoulder_pan_joint</joint_name>
+        <initial_position>${shoulder_pan_init}</initial_position>
+        <position_p_gain>260.0</position_p_gain>
+        <position_i_gain>2.0</position_i_gain>
+        <position_d_gain>28.0</position_d_gain>
+        <position_i_min>-8.0</position_i_min>
+        <position_i_max>8.0</position_i_max>
+        <position_cmd_min>-100.0</position_cmd_min>
+        <position_cmd_max>100.0</position_cmd_max>
+
+        <joint_name>${prefix}shoulder_lift_joint</joint_name>
+        <initial_position>${shoulder_lift_init}</initial_position>
+        <position_p_gain>420.0</position_p_gain>
+        <position_i_gain>4.0</position_i_gain>
+        <position_d_gain>42.0</position_d_gain>
+        <position_i_min>-10.0</position_i_min>
+        <position_i_max>10.0</position_i_max>
+        <position_cmd_min>-120.0</position_cmd_min>
+        <position_cmd_max>120.0</position_cmd_max>
+
+        <joint_name>${prefix}elbow_joint</joint_name>
+        <initial_position>${elbow_init}</initial_position>
+        <position_p_gain>360.0</position_p_gain>
+        <position_i_gain>3.5</position_i_gain>
+        <position_d_gain>34.0</position_d_gain>
+        <position_i_min>-10.0</position_i_min>
+        <position_i_max>10.0</position_i_max>
+        <position_cmd_min>-100.0</position_cmd_min>
+        <position_cmd_max>100.0</position_cmd_max>
+
+        <joint_name>${prefix}wrist_1_joint</joint_name>
+        <initial_position>${wrist_1_init}</initial_position>
+        <position_p_gain>180.0</position_p_gain>
+        <position_i_gain>1.6</position_i_gain>
+        <position_d_gain>16.0</position_d_gain>
+        <position_i_min>-5.0</position_i_min>
+        <position_i_max>5.0</position_i_max>
+        <position_cmd_min>-60.0</position_cmd_min>
+        <position_cmd_max>60.0</position_cmd_max>
+
+        <joint_name>${prefix}wrist_2_joint</joint_name>
+        <initial_position>${wrist_2_init}</initial_position>
+        <position_p_gain>170.0</position_p_gain>
+        <position_i_gain>1.4</position_i_gain>
+        <position_d_gain>15.0</position_d_gain>
+        <position_i_min>-5.0</position_i_min>
+        <position_i_max>5.0</position_i_max>
+        <position_cmd_min>-60.0</position_cmd_min>
+        <position_cmd_max>60.0</position_cmd_max>
+
+        <joint_name>${prefix}wrist_3_joint</joint_name>
+        <initial_position>${wrist_3_init}</initial_position>
+        <position_p_gain>110.0</position_p_gain>
+        <position_i_gain>0.8</position_i_gain>
+        <position_d_gain>10.0</position_d_gain>
+        <position_i_min>-3.0</position_i_min>
+        <position_i_max>3.0</position_i_max>
+        <position_cmd_min>-40.0</position_cmd_min>
+        <position_cmd_max>40.0</position_cmd_max>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="simple_gripper_tool" params="prefix parent tcp_offset_z">
+    <link name="${prefix}tool_plate_link">
+      <inertial>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <mass value="0.45"/>
+        <xacro:box_inertia mass="0.45" x="0.08" y="0.05" z="0.06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.05 0.06"/>
+        </geometry>
+        <material name="steel_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.05 0.06"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}tool_plate_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}tool_plate_link"/>
+      <origin xyz="0 0 0.012" rpy="0 0 1.5708"/>
+    </joint>
+
+    <xacro:box_link parent="${prefix}tool_plate_link" name="${prefix}left_finger"
+                    xyz="0 0.032 0.090" rpy="0 0 0" size="${[0.012, 0.012, 0.16]}"
+                    mass="0.08" material_name="steel_light"/>
+    <xacro:box_link parent="${prefix}tool_plate_link" name="${prefix}right_finger"
+                    xyz="0 -0.032 0.090" rpy="0 0 0" size="${[0.012, 0.012, 0.16]}"
+                    mass="0.08" material_name="steel_light"/>
+    <xacro:fixed_frame parent="${prefix}tool_plate_link" name="${prefix}tcp_frame"
+                       xyz="0 0 ${tcp_offset_z}" rpy="3.14159 0 0"/>
+  </xacro:macro>
+
+  <xacro:macro name="screwdriver_tool" params="prefix parent slide_topic joint_state_topic">
+    <link name="${prefix}screwdriver_body_link">
+      <inertial>
+        <origin xyz="0 0 0.10" rpy="0 0 0"/>
+        <mass value="1.25"/>
+        <xacro:box_inertia mass="1.25" x="0.08" y="0.08" z="0.22"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0.10" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.08 0.22"/>
+        </geometry>
+        <material name="steel_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.10" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.08 0.22"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}screwdriver_body_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}screwdriver_body_link"/>
+      <origin xyz="0 0 0.018" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${prefix}screwdriver_slide_link">
+      <inertial>
+        <origin xyz="0 0 0.06" rpy="0 0 0"/>
+        <mass value="0.4"/>
+        <xacro:cylinder_inertia mass="0.4" radius="0.016" length="0.12"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0.06" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.016" length="0.12"/>
+        </geometry>
+        <material name="steel_light"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.06" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.016" length="0.12"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}screwdriver_slide_joint" type="prismatic">
+      <parent link="${prefix}screwdriver_body_link"/>
+      <child link="${prefix}screwdriver_slide_link"/>
+      <origin xyz="0 0 0.05" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="0.0" upper="0.08" effort="250" velocity="0.15"/>
+      <dynamics damping="12.0" friction="3.0"/>
+    </joint>
+
+    <link name="${prefix}screwdriver_spindle_link">
+      <inertial>
+        <origin xyz="0 0 0.035" rpy="0 0 0"/>
+        <mass value="0.18"/>
+        <xacro:cylinder_inertia mass="0.18" radius="0.008" length="0.07"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0.035" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.008" length="0.07"/>
+        </geometry>
+        <material name="fixture_blue"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.035" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.008" length="0.07"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}screwdriver_spindle_joint" type="continuous">
+      <parent link="${prefix}screwdriver_slide_link"/>
+      <child link="${prefix}screwdriver_spindle_link"/>
+      <origin xyz="0 0 0.12" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+
+    <xacro:fixed_frame parent="${prefix}screwdriver_spindle_link" name="${prefix}tcp_frame"
+                       xyz="0 0 0.055" rpy="3.14159 0 0"/>
+
+    <gazebo>
+      <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+        <topic>${joint_state_topic}</topic>
+        <joint_name>${prefix}screwdriver_slide_joint</joint_name>
+        <joint_name>${prefix}screwdriver_spindle_joint</joint_name>
+      </plugin>
+      <plugin filename="gz-sim-joint-trajectory-controller-system" name="gz::sim::systems::JointTrajectoryController">
+        <topic>${slide_topic}</topic>
+        <joint_name>${prefix}screwdriver_slide_joint</joint_name>
+        <initial_position>0.0</initial_position>
+        <position_p_gain>220.0</position_p_gain>
+        <position_i_gain>2.0</position_i_gain>
+        <position_d_gain>16.0</position_d_gain>
+        <position_i_min>-4.0</position_i_min>
+        <position_i_max>4.0</position_i_max>
+        <position_cmd_min>-20.0</position_cmd_min>
+        <position_cmd_max>20.0</position_cmd_max>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="press_module" params="parent prefix xyz rpy">
+    <xacro:box_link parent="${parent}" name="${prefix}base_link"
+                    xyz="${xyz[0]} ${xyz[1]} ${xyz[2]}" rpy="${rpy}"
+                    size="${[0.34, 0.26, 0.18]}" mass="60.0" material_name="safety_yellow"/>
+    <xacro:box_link parent="${parent}" name="${prefix}column_link"
+                    xyz="${xyz[0]} ${xyz[1]} ${xyz[2] + 0.44}" rpy="${rpy}"
+                    size="${[0.10, 0.12, 0.70]}" mass="75.0" material_name="steel_dark"/>
+
+    <link name="${prefix}ram_link">
+      <inertial>
+        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <mass value="12.0"/>
+        <xacro:box_inertia mass="12.0" x="0.10" y="0.10" z="0.16"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.10 0.10 0.16"/>
+        </geometry>
+        <material name="steel_light"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.10 0.10 0.16"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}ram_joint" type="prismatic">
+      <parent link="${prefix}column_link"/>
+      <child link="${prefix}ram_link"/>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <axis xyz="0 0 -1"/>
+      <limit lower="0.0" upper="0.12" effort="5000" velocity="0.08"/>
+      <dynamics damping="40.0" friction="6.0"/>
+    </joint>
+
+    <xacro:fixed_frame parent="${parent}" name="${prefix}bed_frame"
+                       xyz="${xyz[0]} ${xyz[1]} ${xyz[2] + 0.13}" rpy="${rpy}"/>
+    <xacro:fixed_frame parent="${prefix}ram_link" name="${prefix}ram_frame"
+                       xyz="0 0 0.10" rpy="0 0 0"/>
+
+    <gazebo>
+      <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+        <topic>/joint_states</topic>
+        <joint_name>${prefix}ram_joint</joint_name>
+      </plugin>
+      <plugin filename="gz-sim-joint-trajectory-controller-system" name="gz::sim::systems::JointTrajectoryController">
+        <topic>/press/joint_trajectory</topic>
+        <joint_name>${prefix}ram_joint</joint_name>
+        <initial_position>0.0</initial_position>
+        <position_p_gain>480.0</position_p_gain>
+        <position_i_gain>4.0</position_i_gain>
+        <position_d_gain>32.0</position_d_gain>
+        <position_i_min>-6.0</position_i_min>
+        <position_i_max>6.0</position_i_max>
+        <position_cmd_min>-60.0</position_cmd_min>
+        <position_cmd_max>60.0</position_cmd_max>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="ur_robot_with_tool"
+               params="parent prefix name ur_type base_xyz base_rpy
+                       joint_limits_file kinematics_file physical_file visual_file
+                       joint_state_topic trajectory_topic ft_topic
+                       shoulder_pan_init shoulder_lift_init elbow_init wrist_1_init wrist_2_init wrist_3_init
+                       tool_kind">
+    <link name="${prefix}robot_mount"/>
+    <joint name="${prefix}robot_mount_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}robot_mount"/>
+      <origin xyz="${base_xyz}" rpy="${base_rpy}"/>
+    </joint>
+
+    <xacro:ur_robot
+      name="${name}"
+      tf_prefix="${prefix}"
+      parent="${prefix}robot_mount"
+      joint_limits_parameters_file="${joint_limits_file}"
+      kinematics_parameters_file="${kinematics_file}"
+      physical_parameters_file="${physical_file}"
+      visual_parameters_file="${visual_file}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:ur_robot>
+
+    <link name="${prefix}ft_sensor_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.18"/>
+        <xacro:cylinder_inertia mass="0.18" radius="0.03" length="0.018"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.018"/>
+        </geometry>
+        <material name="steel_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.018"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}wrist_3_to_ft_joint" type="fixed">
+      <parent link="${prefix}wrist_3_link"/>
+      <child link="${prefix}ft_sensor_link"/>
+      <origin xyz="0 0 0.009" rpy="0 0 0"/>
+    </joint>
+
+    <gazebo reference="${prefix}wrist_3_to_ft_joint">
+      <preserveFixedJoint>true</preserveFixedJoint>
+      <sensor name="${prefix}force_torque_sensor" type="force_torque">
+        <update_rate>250.0</update_rate>
+        <always_on>true</always_on>
+        <visualize>false</visualize>
+        <topic>${ft_topic}</topic>
+        <force_torque>
+          <frame>child</frame>
+          <measure_direction>parent_to_child</measure_direction>
+        </force_torque>
+      </sensor>
+    </gazebo>
+
+    <xacro:if value="${tool_kind == 'gripper'}">
+      <xacro:simple_gripper_tool prefix="${prefix}" parent="${prefix}ft_sensor_link" tcp_offset_z="0.182"/>
+    </xacro:if>
+
+    <xacro:if value="${tool_kind == 'screwdriver'}">
+      <xacro:screwdriver_tool prefix="${prefix}" parent="${prefix}ft_sensor_link"
+                              slide_topic="/${prefix}tool/joint_trajectory"
+                              joint_state_topic="${joint_state_topic}"/>
+    </xacro:if>
+
+    <xacro:ur_robot_motion_plugins
+      prefix="${prefix}"
+      joint_state_topic="${joint_state_topic}"
+      trajectory_topic="${trajectory_topic}"
+      shoulder_pan_init="${shoulder_pan_init}"
+      shoulder_lift_init="${shoulder_lift_init}"
+      elbow_init="${elbow_init}"
+      wrist_1_init="${wrist_1_init}"
+      wrist_2_init="${wrist_2_init}"
+      wrist_3_init="${wrist_3_init}"/>
+  </xacro:macro>
+
+</robot>

@@ -1,0 +1,8 @@
+string recipe_name
+string target_frame
+float64 approach_height_m
+float64 stroke_m
+float64 dwell_sec
+---
+bool success
+string message

@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <world name="assembly_world">
+    <gravity>0 0 -9.81</gravity>
+
+    <physics name="physics" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-forcetorque-system" name="gz::sim::systems::ForceTorque"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <!-- For true fixed-joint grasping with separate part models, add one
+         gz::sim::systems::DetachableJoint plugin per graspable part:
+         <plugin filename="gz-sim-detachable-joint-system"
+                 name="gz::sim::systems::DetachableJoint">
+           <parent_link>ur5e_press_tool0</parent_link>
+           <child_model>lower_housing</child_model>
+           <child_link>base_link</child_link>
+           <detach_topic>/grasp/lower_housing/detach</detach_topic>
+           <attach_topic>/grasp/lower_housing/attach</attach_topic>
+           <output_topic>/grasp/lower_housing/state</output_topic>
+         </plugin>
+         Current package keeps parts as links inside one spawned URDF model, so
+         runtime grasping is handled by the ROS logical attacher node instead. -->
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.96 0.96 0.96 1.0</diffuse>
+      <specular>0.15 0.15 0.15 1.0</specular>
+      <direction>-0.35 0.10 -0.93</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="ground_link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.78 0.79 0.80 1.0</ambient>
+            <diffuse>0.78 0.79 0.80 1.0</diffuse>
+            <specular>0.05 0.05 0.05 1.0</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

@@ -1,0 +1,267 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-8e61ca1e034a025c5f7e.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						15,
+						16,
+						17,
+						18,
+						19
+					]
+				},
+				{
+					"build" : "gearbox_sim__py",
+					"jsonFile" : "directory-gearbox_sim__py-57c4720eba8c686c6e5b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/home/dark/ros2_ws/build/gearbox_sim/gearbox_sim__py",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "gearbox_sim__rs",
+					"jsonFile" : "directory-gearbox_sim__rs-3e88967c77789019bda5.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/home/dark/ros2_ws/build/gearbox_sim/gearbox_sim__rs",
+					"targetIndexes" : 
+					[
+						14
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2
+					],
+					"name" : "gearbox_sim",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_build_gearbox_sim_egg::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_build_gearbox_sim_egg-fec82330ad6c0a29b3a7.json",
+					"name" : "ament_cmake_python_build_gearbox_sim_egg",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_symlink_gearbox_sim::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_symlink_gearbox_sim-e3fae8942099bfe9678d.json",
+					"name" : "ament_cmake_python_symlink_gearbox_sim",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim-252dee8e9e3fe6e980fd.json",
+					"name" : "gearbox_sim",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__cpp-ba239012b2f1499e59a9.json",
+					"name" : "gearbox_sim__cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "gearbox_sim__py::@e369e2be3b2b614ae792",
+					"jsonFile" : "target-gearbox_sim__py-f169537f750db4ef6597.json",
+					"name" : "gearbox_sim__py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__rosidl_generator_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__rosidl_generator_c-dd1f7d9a4d65595a3a31.json",
+					"name" : "gearbox_sim__rosidl_generator_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__rosidl_generator_py::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__rosidl_generator_py-6ad025f44314b8d73e55.json",
+					"name" : "gearbox_sim__rosidl_generator_py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__rosidl_generator_type_description::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__rosidl_generator_type_description-9f492d72e3bc1d4f455b.json",
+					"name" : "gearbox_sim__rosidl_generator_type_description",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__rosidl_typesupport_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__rosidl_typesupport_c-264f2192d0c689894a2e.json",
+					"name" : "gearbox_sim__rosidl_typesupport_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__rosidl_typesupport_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__rosidl_typesupport_cpp-97edda8a65b755d6f103.json",
+					"name" : "gearbox_sim__rosidl_typesupport_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__rosidl_typesupport_fastrtps_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__rosidl_typesupport_fastrtps_c-81dfd2def80f8efaaa4e.json",
+					"name" : "gearbox_sim__rosidl_typesupport_fastrtps_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__rosidl_typesupport_fastrtps_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__rosidl_typesupport_fastrtps_cpp-9a5f53151f19a87212a9.json",
+					"name" : "gearbox_sim__rosidl_typesupport_fastrtps_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__rosidl_typesupport_introspection_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__rosidl_typesupport_introspection_c-2fbefec5f226b1697054.json",
+					"name" : "gearbox_sim__rosidl_typesupport_introspection_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim__rosidl_typesupport_introspection_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim__rosidl_typesupport_introspection_cpp-fc3b524e09f41688278b.json",
+					"name" : "gearbox_sim__rosidl_typesupport_introspection_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "gearbox_sim__rs::@7d7c6d5ff97b0c3457df",
+					"jsonFile" : "target-gearbox_sim__rs-0e0ea1967526d6555a5b.json",
+					"name" : "gearbox_sim__rs",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim_s__rosidl_typesupport_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim_s__rosidl_typesupport_c-b6596ae6ca00fdd9ee71.json",
+					"name" : "gearbox_sim_s__rosidl_typesupport_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim_s__rosidl_typesupport_fastrtps_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim_s__rosidl_typesupport_fastrtps_c-6377066557d86d9ca7cc.json",
+					"name" : "gearbox_sim_s__rosidl_typesupport_fastrtps_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim_s__rosidl_typesupport_introspection_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim_s__rosidl_typesupport_introspection_c-21c8a139fb091669348d.json",
+					"name" : "gearbox_sim_s__rosidl_typesupport_introspection_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "gearbox_sim_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-gearbox_sim_uninstall-e48569fb87959762896d.json",
+					"name" : "gearbox_sim_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-fa9bdee661a4a6f92dcc.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/dark/ros2_ws/build/gearbox_sim",
+		"source" : "/home/dark/ros2_ws/src/gearbox_sim"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

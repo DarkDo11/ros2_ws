@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="nema17_parts">
+
+  <material name="nema_gray">
+    <color rgba="0.72 0.72 0.74 1.0"/>
+  </material>
+  <material name="nema_dark">
+    <color rgba="0.22 0.24 0.28 1.0"/>
+  </material>
+  <material name="nema_blue">
+    <color rgba="0.10 0.23 0.75 1.0"/>
+  </material>
+  <material name="nema_gold">
+    <color rgba="0.84 0.67 0.18 1.0"/>
+  </material>
+  <material name="nema_green">
+    <color rgba="0.25 0.56 0.29 1.0"/>
+  </material>
+
+  <xacro:macro name="nema17_part_link"
+               params="parent name mesh_path xyz rpy scale mass color_name
+                       ixx:=1e-4 iyy:=1e-4 izz:=1e-4
+                       collision_type:='box'
+                       collision_size:='0.05 0.05 0.05'
+                       collision_radius:='0.02'
+                       collision_length:='0.04'
+                       collision_origin_xyz:='0 0 0'
+                       collision_origin_rpy:='0 0 0'">
+    <link name="${name}">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="${mass}"/>
+        <inertia ixx="${ixx}" ixy="0.0" ixz="0.0" iyy="${iyy}" iyz="0.0" izz="${izz}"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="${mesh_path}" scale="${scale} ${scale} ${scale}"/>
+        </geometry>
+        <material name="${color_name}"/>
+      </visual>
+      <collision>
+        <origin xyz="${collision_origin_xyz}" rpy="${collision_origin_rpy}"/>
+        <geometry>
+          <xacro:if value="${collision_type == 'box'}">
+            <box size="${collision_size}"/>
+          </xacro:if>
+          <xacro:if value="${collision_type == 'cylinder'}">
+            <cylinder radius="${collision_radius}" length="${collision_length}"/>
+          </xacro:if>
+          <xacro:if value="${collision_type == 'sphere'}">
+            <sphere radius="${collision_radius}"/>
+          </xacro:if>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${name}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+  </xacro:macro>
+
+</robot>

@@ -1,0 +1,4 @@
+source;share/gearbox_sim/local_setup.bash
+source;share/gearbox_sim/local_setup.dsv
+source;share/gearbox_sim/local_setup.sh
+source;share/gearbox_sim/local_setup.zsh

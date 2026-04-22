@@ -1,0 +1,1 @@
+/home/dark/ros2_ws/src/gearbox_sim/scripts/get_joints.py

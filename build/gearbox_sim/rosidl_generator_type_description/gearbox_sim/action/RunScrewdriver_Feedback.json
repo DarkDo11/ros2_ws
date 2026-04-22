@@ -1,0 +1,36 @@
+{
+  "type_description_msg": {
+    "type_description": {
+      "type_name": "gearbox_sim/action/RunScrewdriver_Feedback",
+      "fields": [
+        {
+          "name": "progress",
+          "type": {
+            "type_id": 11,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": ""
+          },
+          "default_value": ""
+        },
+        {
+          "name": "phase",
+          "type": {
+            "type_id": 17,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": ""
+          },
+          "default_value": ""
+        }
+      ]
+    },
+    "referenced_type_descriptions": []
+  },
+  "type_hashes": [
+    {
+      "type_name": "gearbox_sim/action/RunScrewdriver_Feedback",
+      "hash_string": "RIHS01_e00159808448796c9d2e40273ab6e2fbdfd1f101cd0a04f950de47853d14a0c6"
+    }
+  ]
+}

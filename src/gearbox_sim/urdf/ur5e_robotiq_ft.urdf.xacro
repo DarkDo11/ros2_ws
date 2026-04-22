@@ -1,0 +1,331 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ur5e_robotiq_ft">
+
+  <xacro:arg name="name" default="ur5e_cell"/>
+  <xacro:arg name="ur_type" default="ur5e"/>
+  <xacro:arg name="prefix" default=""/>
+  <xacro:arg name="fixed_base" default="false"/>
+  <xacro:arg name="trajectory_topic" default="/ur5e/joint_trajectory"/>
+  <xacro:arg name="joint_state_topic" default="/ur5e/joint_states_gz"/>
+  <xacro:arg name="ft_topic" default="/ur5e/ft_sensor"/>
+  <xacro:arg name="ft_update_rate" default="250.0"/>
+  <xacro:arg name="base_xyz" default="0 0 0"/>
+  <xacro:arg name="base_rpy" default="0 0 0"/>
+  <xacro:arg name="use_simple_gripper" default="true"/>
+  <xacro:arg name="simple_gripper_gap" default="0.060"/>
+  <xacro:arg name="simple_finger_length" default="0.090"/>
+  <xacro:arg name="simple_finger_width" default="0.012"/>
+  <xacro:arg name="simple_finger_thickness" default="0.018"/>
+  <xacro:arg name="shoulder_pan_init" default="0.0"/>
+  <xacro:arg name="shoulder_lift_init" default="-1.603"/>
+  <xacro:arg name="elbow_init" default="1.509"/>
+  <xacro:arg name="wrist_1_init" default="0.0"/>
+  <xacro:arg name="wrist_2_init" default="0.0"/>
+  <xacro:arg name="wrist_3_init" default="0.0"/>
+  <xacro:arg name="mount_demo_sun" default="false"/>
+  <xacro:arg name="demo_sun_mesh_scale" default="0.002"/>
+  <xacro:arg name="demo_sun_mount_z" default="0.135"/>
+
+  <xacro:property name="demo_sun_scale" value="${float('$(arg demo_sun_mesh_scale)')}"/>
+  <xacro:property name="demo_sun_geom_factor" value="${demo_sun_scale / 0.001}"/>
+  <xacro:property name="demo_sun_mass_factor" value="${demo_sun_geom_factor * demo_sun_geom_factor * demo_sun_geom_factor}"/>
+
+  <xacro:arg name="joint_limit_params" default="$(find ur_description)/config/ur5e/joint_limits.yaml"/>
+  <xacro:arg name="kinematics_params" default="$(find ur_description)/config/ur5e/default_kinematics.yaml"/>
+  <xacro:arg name="physical_params" default="$(find ur_description)/config/ur5e/physical_parameters.yaml"/>
+  <xacro:arg name="visual_params" default="$(find ur_description)/config/ur5e/visual_parameters.yaml"/>
+
+  <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
+  <xacro:include filename="$(find robotiq_description)/urdf/robotiq_2f_85_macro.urdf.xacro"/>
+
+  <material name="ft_black">
+    <color rgba="0.15 0.15 0.15 1.0"/>
+  </material>
+  <material name="gripper_grey">
+    <color rgba="0.35 0.35 0.38 1.0"/>
+  </material>
+  <material name="demo_sun_blue">
+    <color rgba="0.08 0.15 0.82 1.0"/>
+  </material>
+
+  <link name="$(arg prefix)robot_mount"/>
+
+  <xacro:if value="$(arg fixed_base)">
+    <!-- Gazebo Sim understands parent='world' during URDF->SDF conversion.
+         We keep this branch out of robot_state_publisher and use it only for spawning. -->
+    <link name="world"/>
+    <joint name="$(arg prefix)world_joint" type="fixed">
+      <parent link="world"/>
+      <child link="$(arg prefix)robot_mount"/>
+      <origin xyz="$(arg base_xyz)" rpy="$(arg base_rpy)"/>
+    </joint>
+  </xacro:if>
+
+  <xacro:ur_robot
+    name="$(arg name)"
+    tf_prefix="$(arg prefix)"
+    parent="$(arg prefix)robot_mount"
+    joint_limits_parameters_file="$(arg joint_limit_params)"
+    kinematics_parameters_file="$(arg kinematics_params)"
+    physical_parameters_file="$(arg physical_params)"
+    visual_parameters_file="$(arg visual_params)">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:ur_robot>
+
+  <link name="$(arg prefix)ft_sensor_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.00015" ixy="0.0" ixz="0.0" iyy="0.00015" iyz="0.0" izz="0.00012"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.030" length="0.018"/>
+      </geometry>
+      <material name="ft_black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.030" length="0.018"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="$(arg prefix)wrist_3_to_ft_joint" type="fixed">
+    <parent link="$(arg prefix)wrist_3_link"/>
+    <child link="$(arg prefix)ft_sensor_link"/>
+    <origin xyz="0 0 0.009" rpy="0 0 0"/>
+  </joint>
+
+  <xacro:if value="$(arg use_simple_gripper)">
+    <link name="$(arg prefix)simple_gripper_base_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.35"/>
+        <inertia ixx="0.00035" ixy="0.0" ixz="0.0" iyy="0.00035" iyz="0.0" izz="0.00020"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0.030" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.075 0.040 0.060"/>
+        </geometry>
+        <material name="gripper_grey"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.030" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.075 0.040 0.060"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="$(arg prefix)simple_gripper_base_joint" type="fixed">
+      <parent link="$(arg prefix)ft_sensor_link"/>
+      <child link="$(arg prefix)simple_gripper_base_link"/>
+      <origin xyz="0 0 0.009" rpy="0 0 1.5708"/>
+    </joint>
+
+    <link name="$(arg prefix)simple_left_finger_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.08"/>
+        <inertia ixx="0.00010" ixy="0.0" ixz="0.0" iyy="0.00004" iyz="0.0" izz="0.00010"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 ${0.5 * $(arg simple_finger_length)}" rpy="0 0 0"/>
+        <geometry>
+          <box size="$(arg simple_finger_thickness) $(arg simple_finger_width) $(arg simple_finger_length)"/>
+        </geometry>
+        <material name="gripper_grey"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${0.5 * $(arg simple_finger_length)}" rpy="0 0 0"/>
+        <geometry>
+          <box size="$(arg simple_finger_thickness) $(arg simple_finger_width) $(arg simple_finger_length)"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="$(arg prefix)simple_left_finger_joint" type="fixed">
+      <parent link="$(arg prefix)simple_gripper_base_link"/>
+      <child link="$(arg prefix)simple_left_finger_link"/>
+      <origin xyz="0 ${0.5 * $(arg simple_gripper_gap)} 0.010" rpy="0 0 0"/>
+    </joint>
+
+    <link name="$(arg prefix)simple_right_finger_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.08"/>
+        <inertia ixx="0.00010" ixy="0.0" ixz="0.0" iyy="0.00004" iyz="0.0" izz="0.00010"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 ${0.5 * $(arg simple_finger_length)}" rpy="0 0 0"/>
+        <geometry>
+          <box size="$(arg simple_finger_thickness) $(arg simple_finger_width) $(arg simple_finger_length)"/>
+        </geometry>
+        <material name="gripper_grey"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${0.5 * $(arg simple_finger_length)}" rpy="0 0 0"/>
+        <geometry>
+          <box size="$(arg simple_finger_thickness) $(arg simple_finger_width) $(arg simple_finger_length)"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="$(arg prefix)simple_right_finger_joint" type="fixed">
+      <parent link="$(arg prefix)simple_gripper_base_link"/>
+      <child link="$(arg prefix)simple_right_finger_link"/>
+      <origin xyz="0 ${-0.5 * $(arg simple_gripper_gap)} 0.010" rpy="0 0 0"/>
+    </joint>
+
+    <xacro:if value="$(arg mount_demo_sun)">
+      <link name="$(arg prefix)demo_sun_link">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <mass value="${0.15 * demo_sun_mass_factor}"/>
+          <inertia
+            ixx="${2.0e-5 * demo_sun_mass_factor}"
+            ixy="0.0"
+            ixz="0.0"
+            iyy="${2.0e-5 * demo_sun_mass_factor}"
+            iyz="0.0"
+            izz="${1.2e-5 * demo_sun_mass_factor}"/>
+        </inertial>
+        <visual>
+          <origin xyz="${-0.006872 * demo_sun_geom_factor} ${-0.006872 * demo_sun_geom_factor} ${-0.030400 * demo_sun_geom_factor}" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="file://$(find gearbox_sim)/meshes/satellite.STL" scale="${demo_sun_scale} ${demo_sun_scale} ${demo_sun_scale}"/>
+          </geometry>
+          <material name="demo_sun_blue"/>
+        </visual>
+        <collision>
+          <origin xyz="${-0.006872 * demo_sun_geom_factor} ${-0.006872 * demo_sun_geom_factor} ${-0.030400 * demo_sun_geom_factor}" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="file://$(find gearbox_sim)/meshes/satellite.STL" scale="${demo_sun_scale} ${demo_sun_scale} ${demo_sun_scale}"/>
+          </geometry>
+        </collision>
+      </link>
+
+      <joint name="$(arg prefix)demo_sun_joint" type="fixed">
+        <parent link="$(arg prefix)simple_gripper_base_link"/>
+        <child link="$(arg prefix)demo_sun_link"/>
+        <origin xyz="0 0 $(arg demo_sun_mount_z)" rpy="0 0 0"/>
+      </joint>
+
+      <link name="$(arg prefix)demo_sun_center_link"/>
+
+      <joint name="$(arg prefix)demo_sun_center_joint" type="fixed">
+        <parent link="$(arg prefix)demo_sun_link"/>
+        <child link="$(arg prefix)demo_sun_center_link"/>
+        <origin xyz="0 0 ${-0.0100 * demo_sun_geom_factor}" rpy="0 0 0"/>
+      </joint>
+    </xacro:if>
+  </xacro:if>
+
+  <xacro:unless value="$(arg use_simple_gripper)">
+    <xacro:robotiq_gripper
+      name="robotiq_2f_85"
+      prefix="$(arg prefix)gripper_"
+      parent="$(arg prefix)ft_sensor_link"
+      sim_ignition="true"
+      include_ros2_control="false">
+      <origin xyz="0 0 0.018" rpy="0 0 1.5708"/>
+    </xacro:robotiq_gripper>
+  </xacro:unless>
+
+  <gazebo reference="$(arg prefix)wrist_3_to_ft_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+    <sensor name="$(arg prefix)force_torque_sensor" type="force_torque">
+      <update_rate>$(arg ft_update_rate)</update_rate>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+      <topic>$(arg ft_topic)</topic>
+      <force_torque>
+        <frame>child</frame>
+        <measure_direction>parent_to_child</measure_direction>
+      </force_torque>
+    </sensor>
+  </gazebo>
+
+  <gazebo>
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>$(arg joint_state_topic)</topic>
+      <joint_name>$(arg prefix)shoulder_pan_joint</joint_name>
+      <joint_name>$(arg prefix)shoulder_lift_joint</joint_name>
+      <joint_name>$(arg prefix)elbow_joint</joint_name>
+      <joint_name>$(arg prefix)wrist_1_joint</joint_name>
+      <joint_name>$(arg prefix)wrist_2_joint</joint_name>
+      <joint_name>$(arg prefix)wrist_3_joint</joint_name>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-trajectory-controller-system" name="gz::sim::systems::JointTrajectoryController">
+      <topic>$(arg trajectory_topic)</topic>
+      <joint_name>$(arg prefix)shoulder_pan_joint</joint_name>
+      <initial_position>$(arg shoulder_pan_init)</initial_position>
+      <position_p_gain>260.0</position_p_gain>
+      <position_i_gain>2.0</position_i_gain>
+      <position_d_gain>28.0</position_d_gain>
+      <position_i_min>-8.0</position_i_min>
+      <position_i_max>8.0</position_i_max>
+      <position_cmd_min>-100.0</position_cmd_min>
+      <position_cmd_max>100.0</position_cmd_max>
+
+      <joint_name>$(arg prefix)shoulder_lift_joint</joint_name>
+      <initial_position>$(arg shoulder_lift_init)</initial_position>
+      <position_p_gain>420.0</position_p_gain>
+      <position_i_gain>4.0</position_i_gain>
+      <position_d_gain>42.0</position_d_gain>
+      <position_i_min>-10.0</position_i_min>
+      <position_i_max>10.0</position_i_max>
+      <position_cmd_min>-120.0</position_cmd_min>
+      <position_cmd_max>120.0</position_cmd_max>
+
+      <joint_name>$(arg prefix)elbow_joint</joint_name>
+      <initial_position>$(arg elbow_init)</initial_position>
+      <position_p_gain>360.0</position_p_gain>
+      <position_i_gain>3.5</position_i_gain>
+      <position_d_gain>34.0</position_d_gain>
+      <position_i_min>-10.0</position_i_min>
+      <position_i_max>10.0</position_i_max>
+      <position_cmd_min>-100.0</position_cmd_min>
+      <position_cmd_max>100.0</position_cmd_max>
+
+      <joint_name>$(arg prefix)wrist_1_joint</joint_name>
+      <initial_position>$(arg wrist_1_init)</initial_position>
+      <position_p_gain>180.0</position_p_gain>
+      <position_i_gain>1.6</position_i_gain>
+      <position_d_gain>16.0</position_d_gain>
+      <position_i_min>-5.0</position_i_min>
+      <position_i_max>5.0</position_i_max>
+      <position_cmd_min>-60.0</position_cmd_min>
+      <position_cmd_max>60.0</position_cmd_max>
+
+      <joint_name>$(arg prefix)wrist_2_joint</joint_name>
+      <initial_position>$(arg wrist_2_init)</initial_position>
+      <position_p_gain>170.0</position_p_gain>
+      <position_i_gain>1.4</position_i_gain>
+      <position_d_gain>15.0</position_d_gain>
+      <position_i_min>-5.0</position_i_min>
+      <position_i_max>5.0</position_i_max>
+      <position_cmd_min>-60.0</position_cmd_min>
+      <position_cmd_max>60.0</position_cmd_max>
+
+      <joint_name>$(arg prefix)wrist_3_joint</joint_name>
+      <initial_position>$(arg wrist_3_init)</initial_position>
+      <position_p_gain>110.0</position_p_gain>
+      <position_i_gain>0.8</position_i_gain>
+      <position_d_gain>10.0</position_d_gain>
+      <position_i_min>-3.0</position_i_min>
+      <position_i_max>3.0</position_i_max>
+      <position_cmd_min>-40.0</position_cmd_min>
+      <position_cmd_max>40.0</position_cmd_max>
+      <velocity_p_gain>2.0</velocity_p_gain>
+      <velocity_i_gain>0.0</velocity_i_gain>
+      <velocity_d_gain>0.2</velocity_d_gain>
+    </plugin>
+  </gazebo>
+
+</robot>

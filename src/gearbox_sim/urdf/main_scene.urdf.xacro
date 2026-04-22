@@ -1,0 +1,269 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="gearbox_assembly_cell">
+
+  <xacro:arg name="mesh_scale" default="0.001"/>
+  <xacro:property name="mesh_scale" value="${float('$(arg mesh_scale)')}"/>
+
+  <xacro:include filename="include/workcell_macros.xacro"/>
+  <xacro:include filename="include/nema17_parts.xacro"/>
+
+  <!-- Drawing-derived layout, scaled from the 3600 x 2500 mm top view. -->
+  <xacro:property name="press_xyz" value="${[-1.49, 0.35, 0.79]}"/>
+  <xacro:property name="buffer_xyz" value="${[-0.35, 0.39, 0.79]}"/>
+  <xacro:property name="assembly_xyz" value="${[0.75, 0.39, 0.79]}"/>
+  <xacro:property name="output_xyz" value="${[0.20, -0.19, 0.84]}"/>
+  <xacro:property name="feeder_xyz" value="${[1.23, 0.77, 0.84]}"/>
+
+  <xacro:property name="pallet_a_xyz" value="${[-1.26, -0.27, 0.84]}"/>
+  <xacro:property name="pallet_b_xyz" value="${[-1.02, -0.27, 0.84]}"/>
+  <xacro:property name="pallet_c_xyz" value="${[-0.78, -0.27, 0.84]}"/>
+  <xacro:property name="pallet_d_xyz" value="${[-0.54, -0.27, 0.84]}"/>
+
+  <xacro:property name="ur5e_press_xyz" value="${[-0.89, 0.39, 0.79]}"/>
+  <xacro:property name="ur5e_assembly_xyz" value="${[0.19, 0.39, 0.79]}"/>
+  <xacro:property name="ur3e_xyz" value="${[1.23, 0.39, 0.79]}"/>
+
+  <link name="world"/>
+
+  <xacro:table_station parent="world" prefix="buffer_station"
+                       xyz="${buffer_xyz}" rpy="0 0 0"
+                       size="${[0.32, 0.22, 0.08]}" height="0.79"/>
+  <xacro:table_station parent="world" prefix="assembly_station"
+                       xyz="${assembly_xyz}" rpy="0 0 0"
+                       size="${[0.48, 0.30, 0.08]}" height="0.79"/>
+  <xacro:table_station parent="world" prefix="output_tray"
+                       xyz="${output_xyz}" rpy="0 0 0"
+                       size="${[0.26, 0.18, 0.03]}" height="0.81"
+                       material_name="steel_light"/>
+
+  <xacro:pallet_station parent="world" prefix="pallet_a" xyz="${pallet_a_xyz}" rpy="0 0 0"/>
+  <xacro:pallet_station parent="world" prefix="pallet_b" xyz="${pallet_b_xyz}" rpy="0 0 0"/>
+  <xacro:pallet_station parent="world" prefix="pallet_c" xyz="${pallet_c_xyz}" rpy="0 0 0"/>
+  <xacro:pallet_station parent="world" prefix="pallet_d" xyz="${pallet_d_xyz}" rpy="0 0 0"/>
+
+  <xacro:press_module parent="world" prefix="press_" xyz="${press_xyz}" rpy="0 0 0"/>
+
+  <xacro:box_link parent="world" name="autofeeder_body"
+                  xyz="${feeder_xyz[0]} ${feeder_xyz[1]} ${feeder_xyz[2]}" rpy="0 0 0"
+                  size="${[0.22, 0.18, 0.12]}" mass="12.0" material_name="steel_dark"/>
+  <xacro:fixed_frame parent="world" name="autofeeder_pick_frame"
+                     xyz="${feeder_xyz[0]} ${feeder_xyz[1]} ${feeder_xyz[2] + 0.10}" rpy="3.14159 0 0"/>
+
+  <xacro:fixed_frame parent="world" name="press_lower_housing_frame"
+                     xyz="${press_xyz[0]} ${press_xyz[1]} ${press_xyz[2] + 0.13}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="press_main_bearing_frame"
+                     xyz="${press_xyz[0]} ${press_xyz[1]} ${press_xyz[2] + 0.17}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="press_cover_frame"
+                     xyz="${press_xyz[0] + 0.09} ${press_xyz[1]} ${press_xyz[2] + 0.13}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="press_small_bearing_frame"
+                     xyz="${press_xyz[0] + 0.09} ${press_xyz[1]} ${press_xyz[2] + 0.17}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="press_housing_frame"
+                     xyz="${press_xyz[0] - 0.09} ${press_xyz[1]} ${press_xyz[2] + 0.13}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="press_ring_gear_frame"
+                     xyz="${press_xyz[0] - 0.09} ${press_xyz[1]} ${press_xyz[2] + 0.18}" rpy="3.14159 0 0"/>
+
+  <xacro:fixed_frame parent="world" name="buffer_lower_housing_frame"
+                     xyz="${buffer_xyz[0] - 0.07} ${buffer_xyz[1]} ${buffer_xyz[2] + 0.07}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="buffer_cover_frame"
+                     xyz="${buffer_xyz[0]} ${buffer_xyz[1]} ${buffer_xyz[2] + 0.07}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="buffer_housing_frame"
+                     xyz="${buffer_xyz[0] + 0.07} ${buffer_xyz[1]} ${buffer_xyz[2] + 0.07}" rpy="3.14159 0 0"/>
+
+  <xacro:fixed_frame parent="world" name="assembly_lower_housing_frame"
+                     xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_xyz[2] + 0.07}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_ring_gear_frame"
+                     xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_xyz[2] + 0.11}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_planet_1_frame"
+                     xyz="${assembly_xyz[0] - 0.06} ${assembly_xyz[1] + 0.028} ${assembly_xyz[2] + 0.12}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_planet_2_frame"
+                     xyz="${assembly_xyz[0] - 0.12} ${assembly_xyz[1] + 0.000} ${assembly_xyz[2] + 0.12}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_planet_3_frame"
+                     xyz="${assembly_xyz[0] - 0.06} ${assembly_xyz[1] - 0.028} ${assembly_xyz[2] + 0.12}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_sun_frame"
+                     xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_xyz[2] + 0.135}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_carrier_frame"
+                     xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_xyz[2] + 0.17}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_housing_frame"
+                     xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_xyz[2] + 0.21}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_cover_frame"
+                     xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_xyz[2] + 0.25}" rpy="3.14159 0 0"/>
+
+  <xacro:fixed_frame parent="world" name="assembly_screw_1_frame"
+                     xyz="${assembly_xyz[0] - 0.055} ${assembly_xyz[1] + 0.055} ${assembly_xyz[2] + 0.27}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_screw_2_frame"
+                     xyz="${assembly_xyz[0] - 0.125} ${assembly_xyz[1] + 0.055} ${assembly_xyz[2] + 0.27}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_screw_3_frame"
+                     xyz="${assembly_xyz[0] - 0.055} ${assembly_xyz[1] - 0.055} ${assembly_xyz[2] + 0.27}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="assembly_screw_4_frame"
+                     xyz="${assembly_xyz[0] - 0.125} ${assembly_xyz[1] - 0.055} ${assembly_xyz[2] + 0.27}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="output_tray_drop_frame"
+                     xyz="${output_xyz[0]} ${output_xyz[1]} ${output_xyz[2] + 0.06}" rpy="3.14159 0 0"/>
+
+  <xacro:fixed_frame parent="world" name="pallet_a_lower_housing_pick_frame"
+                     xyz="${pallet_a_xyz[0]} ${pallet_a_xyz[1] + 0.03} ${pallet_a_xyz[2] + 0.12}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="pallet_a_main_bearing_pick_frame"
+                     xyz="${pallet_a_xyz[0]} ${pallet_a_xyz[1] - 0.03} ${pallet_a_xyz[2] + 0.13}" rpy="3.14159 0 0"/>
+
+  <xacro:fixed_frame parent="world" name="pallet_b_cover_pick_frame"
+                     xyz="${pallet_b_xyz[0]} ${pallet_b_xyz[1] + 0.03} ${pallet_b_xyz[2] + 0.12}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="pallet_b_small_bearing_pick_frame"
+                     xyz="${pallet_b_xyz[0]} ${pallet_b_xyz[1] - 0.03} ${pallet_b_xyz[2] + 0.13}" rpy="3.14159 0 0"/>
+
+  <xacro:fixed_frame parent="world" name="pallet_c_housing_pick_frame"
+                     xyz="${pallet_c_xyz[0]} ${pallet_c_xyz[1] + 0.03} ${pallet_c_xyz[2] + 0.12}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="pallet_c_ring_gear_pick_frame"
+                     xyz="${pallet_c_xyz[0]} ${pallet_c_xyz[1] - 0.03} ${pallet_c_xyz[2] + 0.13}" rpy="3.14159 0 0"/>
+
+  <xacro:fixed_frame parent="world" name="pallet_d_planet_1_pick_frame"
+                     xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1] + 0.05} ${pallet_d_xyz[2] + 0.11}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="pallet_d_planet_2_pick_frame"
+                     xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1]} ${pallet_d_xyz[2] + 0.11}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="pallet_d_planet_3_pick_frame"
+                     xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1] - 0.05} ${pallet_d_xyz[2] + 0.11}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="pallet_d_sun_pick_frame"
+                     xyz="${pallet_d_xyz[0] + 0.035} ${pallet_d_xyz[1] + 0.03} ${pallet_d_xyz[2] + 0.11}" rpy="3.14159 0 0"/>
+  <xacro:fixed_frame parent="world" name="pallet_d_carrier_pick_frame"
+                     xyz="${pallet_d_xyz[0] + 0.035} ${pallet_d_xyz[1] - 0.03} ${pallet_d_xyz[2] + 0.11}" rpy="3.14159 0 0"/>
+
+  <xacro:nema17_part_link parent="world" name="lower_housing_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/Front_box.STL"
+                          xyz="${pallet_a_xyz[0]} ${pallet_a_xyz[1] + 0.03} ${pallet_a_xyz[2] + 0.07}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.28" color_name="nema_dark"
+                          collision_type="box" collision_size="0.050 0.050 0.030"/>
+  <xacro:nema17_part_link parent="world" name="main_bearing_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/big_roller.STL"
+                          xyz="${pallet_a_xyz[0]} ${pallet_a_xyz[1] - 0.03} ${pallet_a_xyz[2] + 0.07}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.18" color_name="nema_gray"
+                          collision_type="cylinder" collision_radius="0.020" collision_length="0.014"/>
+  <xacro:nema17_part_link parent="world" name="cover_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/Back_box.STL"
+                          xyz="${pallet_b_xyz[0]} ${pallet_b_xyz[1] + 0.03} ${pallet_b_xyz[2] + 0.07}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.24" color_name="nema_dark"
+                          collision_type="box" collision_size="0.048 0.048 0.022"/>
+  <xacro:nema17_part_link parent="world" name="small_bearing_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/Small_roller.STL"
+                          xyz="${pallet_b_xyz[0]} ${pallet_b_xyz[1] - 0.03} ${pallet_b_xyz[2] + 0.07}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.10" color_name="nema_gray"
+                          collision_type="cylinder" collision_radius="0.015" collision_length="0.010"/>
+  <xacro:nema17_part_link parent="world" name="housing_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/Middle_box.STL"
+                          xyz="${pallet_c_xyz[0]} ${pallet_c_xyz[1] + 0.03} ${pallet_c_xyz[2] + 0.07}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.34" color_name="nema_dark"
+                          collision_type="box" collision_size="0.056 0.056 0.040"/>
+  <xacro:nema17_part_link parent="world" name="ring_gear_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/Spur_gear.STL"
+                          xyz="${pallet_c_xyz[0]} ${pallet_c_xyz[1] - 0.03} ${pallet_c_xyz[2] + 0.07}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.12" color_name="nema_blue"
+                          collision_type="cylinder" collision_radius="0.021" collision_length="0.010"/>
+  <xacro:nema17_part_link parent="world" name="planet_1_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/satellite.STL"
+                          xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1] + 0.05} ${pallet_d_xyz[2] + 0.055}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.04" color_name="nema_gold"
+                          collision_type="cylinder" collision_radius="0.008" collision_length="0.010"/>
+  <xacro:nema17_part_link parent="world" name="planet_2_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/satellite.STL"
+                          xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1]} ${pallet_d_xyz[2] + 0.055}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.04" color_name="nema_gold"
+                          collision_type="cylinder" collision_radius="0.008" collision_length="0.010"/>
+  <xacro:nema17_part_link parent="world" name="planet_3_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/satellite.STL"
+                          xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1] - 0.05} ${pallet_d_xyz[2] + 0.055}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.04" color_name="nema_gold"
+                          collision_type="cylinder" collision_radius="0.008" collision_length="0.010"/>
+  <xacro:nema17_part_link parent="world" name="sun_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/Sun_gear.STL"
+                          xyz="${pallet_d_xyz[0] + 0.035} ${pallet_d_xyz[1] + 0.03} ${pallet_d_xyz[2] + 0.055}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.08" color_name="nema_green"
+                          collision_type="cylinder" collision_radius="0.010" collision_length="0.018"/>
+  <xacro:nema17_part_link parent="world" name="carrier_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/Vodilo.STL"
+                          xyz="${pallet_d_xyz[0] + 0.035} ${pallet_d_xyz[1] - 0.03} ${pallet_d_xyz[2] + 0.055}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.12" color_name="nema_blue"
+                          collision_type="cylinder" collision_radius="0.018" collision_length="0.014"/>
+  <xacro:nema17_part_link parent="world" name="assembly_ring_gear_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/Spur_gear.STL"
+                          xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_xyz[2] + 0.07}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.12" color_name="nema_blue"
+                          collision_type="cylinder" collision_radius="0.021" collision_length="0.010"/>
+  <xacro:nema17_part_link parent="world" name="screw_visual"
+                          mesh_path="file://$(find gearbox_sim)/meshes/nema17/screw.STL"
+                          xyz="${feeder_xyz[0]} ${feeder_xyz[1]} ${feeder_xyz[2] + 0.09}"
+                          rpy="0 0 0" scale="${mesh_scale}" mass="0.01" color_name="nema_gray"
+                          collision_type="cylinder" collision_radius="0.0025" collision_length="0.018"/>
+
+  <xacro:camera_stub parent="world" prefix="camera_press"
+                     xyz="-1.05 1.15 1.95" rpy="-2.25 0.0 -0.30" topic="/cameras/press/image_raw"/>
+  <xacro:camera_stub parent="world" prefix="camera_transfer"
+                     xyz="-0.15 1.10 1.90" rpy="-2.20 0.0 0.00" topic="/cameras/transfer/image_raw"/>
+  <xacro:camera_stub parent="world" prefix="camera_assembly"
+                     xyz="0.92 1.05 1.90" rpy="-2.18 0.0 0.20" topic="/cameras/assembly/image_raw"/>
+  <xacro:camera_stub parent="world" prefix="camera_screw"
+                     xyz="1.50 0.80 1.75" rpy="-2.35 0.0 2.85" topic="/cameras/screw/image_raw"/>
+
+  <xacro:ur_robot_with_tool
+    parent="world"
+    prefix="ur5e_press_"
+    name="ur5e_press"
+    ur_type="ur5e"
+    base_xyz="${ur5e_press_xyz[0]} ${ur5e_press_xyz[1]} ${ur5e_press_xyz[2]}"
+    base_rpy="0 0 -1.5708"
+    joint_limits_file="$(find ur_description)/config/ur5e/joint_limits.yaml"
+    kinematics_file="$(find ur_description)/config/ur5e/default_kinematics.yaml"
+    physical_file="$(find ur_description)/config/ur5e/physical_parameters.yaml"
+    visual_file="$(find ur_description)/config/ur5e/visual_parameters.yaml"
+    joint_state_topic="/joint_states"
+    trajectory_topic="/ur5e_press/joint_trajectory"
+    ft_topic="/ur5e_press/ft_sensor"
+    shoulder_pan_init="-1.57"
+    shoulder_lift_init="-1.85"
+    elbow_init="1.92"
+    wrist_1_init="-1.64"
+    wrist_2_init="-1.57"
+    wrist_3_init="0.0"
+    tool_kind="gripper"/>
+
+  <xacro:ur_robot_with_tool
+    parent="world"
+    prefix="ur5e_assembly_"
+    name="ur5e_assembly"
+    ur_type="ur5e"
+    base_xyz="${ur5e_assembly_xyz[0]} ${ur5e_assembly_xyz[1]} ${ur5e_assembly_xyz[2]}"
+    base_rpy="0 0 -1.5708"
+    joint_limits_file="$(find ur_description)/config/ur5e/joint_limits.yaml"
+    kinematics_file="$(find ur_description)/config/ur5e/default_kinematics.yaml"
+    physical_file="$(find ur_description)/config/ur5e/physical_parameters.yaml"
+    visual_file="$(find ur_description)/config/ur5e/visual_parameters.yaml"
+    joint_state_topic="/joint_states"
+    trajectory_topic="/ur5e_assembly/joint_trajectory"
+    ft_topic="/ur5e_assembly/ft_sensor"
+    shoulder_pan_init="-1.20"
+    shoulder_lift_init="-1.92"
+    elbow_init="2.02"
+    wrist_1_init="-1.68"
+    wrist_2_init="-1.57"
+    wrist_3_init="0.0"
+    tool_kind="gripper"/>
+
+  <xacro:ur_robot_with_tool
+    parent="world"
+    prefix="ur3e_screw_"
+    name="ur3e_screw"
+    ur_type="ur3e"
+    base_xyz="${ur3e_xyz[0]} ${ur3e_xyz[1]} ${ur3e_xyz[2]}"
+    base_rpy="0 0 3.14159"
+    joint_limits_file="$(find ur_description)/config/ur3e/joint_limits.yaml"
+    kinematics_file="$(find ur_description)/config/ur3e/default_kinematics.yaml"
+    physical_file="$(find ur_description)/config/ur3e/physical_parameters.yaml"
+    visual_file="$(find ur_description)/config/ur3e/visual_parameters.yaml"
+    joint_state_topic="/joint_states"
+    trajectory_topic="/ur3e_screw/joint_trajectory"
+    ft_topic="/ur3e_screw/ft_sensor"
+    shoulder_pan_init="1.57"
+    shoulder_lift_init="-1.75"
+    elbow_init="1.98"
+    wrist_1_init="-1.80"
+    wrist_2_init="-1.57"
+    wrist_3_init="0.0"
+    tool_kind="screwdriver"/>
+
+</robot>

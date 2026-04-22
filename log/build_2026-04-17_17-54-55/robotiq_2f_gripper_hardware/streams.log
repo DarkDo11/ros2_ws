@@ -1,0 +1,35 @@
+[0.011s] Invoking command in '/home/dark/ros2_ws/build/robotiq_2f_gripper_hardware': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_hardware -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/dark/ros2_ws/install/robotiq_2f_gripper_hardware
+[0.022s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.194s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.201s] -- Found hardware_interface: 4.44.0 (/opt/ros/jazzy/share/hardware_interface/cmake)
+[0.226s] -- Found rosidl_generator_c: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.234s] -- Found rosidl_generator_cpp: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.244s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.256s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.434s] -- Found TinyXML2 via Config file: /usr/lib/x86_64-linux-gnu/cmake/tinyxml2
+[0.466s] -- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[0.467s] -- Found rmw_fastrtps_cpp: 8.4.3 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[0.484s] -- Found TinyXML2 via Config file: /usr/lib/x86_64-linux-gnu/cmake/tinyxml2
+[0.492s] -- Found TinyXML2 via Config file: /usr/lib/x86_64-linux-gnu/cmake/tinyxml2
+[0.506s] -- Found TinyXML2 via Config file: /usr/lib/x86_64-linux-gnu/cmake/tinyxml2
+[0.513s] -- Found TinyXML2 via Config file: /usr/lib/x86_64-linux-gnu/cmake/tinyxml2
+[0.523s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.652s] [31mCMake Error at CMakeLists.txt:15 (find_package):
+[0.652s]   By not providing "Findrobotiq_2f_gripper_msgs.cmake" in CMAKE_MODULE_PATH
+[0.652s]   this project has asked CMake to find a package configuration file provided
+[0.653s]   by "robotiq_2f_gripper_msgs", but CMake did not find one.
+[0.653s] 
+[0.653s]   Could not find a package configuration file provided by
+[0.653s]   "robotiq_2f_gripper_msgs" with any of the following names:
+[0.653s] 
+[0.653s]     robotiq_2f_gripper_msgsConfig.cmake
+[0.653s]     robotiq_2f_gripper_msgs-config.cmake
+[0.653s] 
+[0.653s]   Add the installation prefix of "robotiq_2f_gripper_msgs" to
+[0.653s]   CMAKE_PREFIX_PATH or set "robotiq_2f_gripper_msgs_DIR" to a directory
+[0.653s]   containing one of the above files.  If "robotiq_2f_gripper_msgs" provides a
+[0.653s]   separate development package or SDK, be sure it has been installed.
+[0.653s] 
+[0.653s] [0m
+[0.653s] -- Configuring incomplete, errors occurred!
+[0.659s] Invoked command in '/home/dark/ros2_ws/build/robotiq_2f_gripper_hardware' returned '1': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_hardware -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/dark/ros2_ws/install/robotiq_2f_gripper_hardware
