@@ -19,6 +19,12 @@
   <xacro:property name="pallet_c_xyz" value="${[-0.78, -0.27, 0.84]}"/>
   <xacro:property name="pallet_d_xyz" value="${[-0.54, -0.27, 0.84]}"/>
 
+  <xacro:property name="pallet_surface_z" value="${pallet_a_xyz[2] + 0.06}"/>
+  <xacro:property name="buffer_surface_z" value="${buffer_xyz[2] + 0.04}"/>
+  <xacro:property name="assembly_surface_z" value="${assembly_xyz[2] + 0.04}"/>
+  <xacro:property name="output_surface_z" value="${output_xyz[2] + 0.015}"/>
+  <xacro:property name="feeder_surface_z" value="${feeder_xyz[2] + 0.06}"/>
+
   <xacro:property name="ur5e_press_xyz" value="${[-0.89, 0.39, 0.79]}"/>
   <xacro:property name="ur5e_assembly_xyz" value="${[0.19, 0.39, 0.79]}"/>
   <xacro:property name="ur3e_xyz" value="${[1.23, 0.39, 0.79]}"/>
@@ -127,67 +133,67 @@
 
   <xacro:nema17_part_link parent="world" name="lower_housing_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/Front_box.STL"
-                          xyz="${pallet_a_xyz[0]} ${pallet_a_xyz[1] + 0.03} ${pallet_a_xyz[2] + 0.07}"
+                          xyz="${pallet_a_xyz[0]} ${pallet_a_xyz[1] + 0.03} ${pallet_surface_z + 0.015}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.28" color_name="nema_dark"
                           collision_type="box" collision_size="0.050 0.050 0.030"/>
   <xacro:nema17_part_link parent="world" name="main_bearing_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/big_roller.STL"
-                          xyz="${pallet_a_xyz[0]} ${pallet_a_xyz[1] - 0.03} ${pallet_a_xyz[2] + 0.07}"
+                          xyz="${pallet_a_xyz[0]} ${pallet_a_xyz[1] - 0.03} ${pallet_surface_z + 0.007}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.18" color_name="nema_gray"
                           collision_type="cylinder" collision_radius="0.020" collision_length="0.014"/>
   <xacro:nema17_part_link parent="world" name="cover_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/Back_box.STL"
-                          xyz="${pallet_b_xyz[0]} ${pallet_b_xyz[1] + 0.03} ${pallet_b_xyz[2] + 0.07}"
+                          xyz="${pallet_b_xyz[0]} ${pallet_b_xyz[1] + 0.03} ${pallet_surface_z + 0.011}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.24" color_name="nema_dark"
                           collision_type="box" collision_size="0.048 0.048 0.022"/>
   <xacro:nema17_part_link parent="world" name="small_bearing_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/Small_roller.STL"
-                          xyz="${pallet_b_xyz[0]} ${pallet_b_xyz[1] - 0.03} ${pallet_b_xyz[2] + 0.07}"
+                          xyz="${pallet_b_xyz[0]} ${pallet_b_xyz[1] - 0.03} ${pallet_surface_z + 0.005}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.10" color_name="nema_gray"
                           collision_type="cylinder" collision_radius="0.015" collision_length="0.010"/>
   <xacro:nema17_part_link parent="world" name="housing_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/Middle_box.STL"
-                          xyz="${pallet_c_xyz[0]} ${pallet_c_xyz[1] + 0.03} ${pallet_c_xyz[2] + 0.07}"
+                          xyz="${pallet_c_xyz[0]} ${pallet_c_xyz[1] + 0.03} ${pallet_surface_z + 0.020}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.34" color_name="nema_dark"
                           collision_type="box" collision_size="0.056 0.056 0.040"/>
   <xacro:nema17_part_link parent="world" name="ring_gear_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/Spur_gear.STL"
-                          xyz="${pallet_c_xyz[0]} ${pallet_c_xyz[1] - 0.03} ${pallet_c_xyz[2] + 0.07}"
+                          xyz="${pallet_c_xyz[0]} ${pallet_c_xyz[1] - 0.03} ${pallet_surface_z + 0.005}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.12" color_name="nema_blue"
                           collision_type="cylinder" collision_radius="0.021" collision_length="0.010"/>
   <xacro:nema17_part_link parent="world" name="planet_1_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/satellite.STL"
-                          xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1] + 0.05} ${pallet_d_xyz[2] + 0.055}"
+                          xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1] + 0.05} ${pallet_surface_z + 0.005}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.04" color_name="nema_gold"
                           collision_type="cylinder" collision_radius="0.008" collision_length="0.010"/>
   <xacro:nema17_part_link parent="world" name="planet_2_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/satellite.STL"
-                          xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1]} ${pallet_d_xyz[2] + 0.055}"
+                          xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1]} ${pallet_surface_z + 0.005}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.04" color_name="nema_gold"
                           collision_type="cylinder" collision_radius="0.008" collision_length="0.010"/>
   <xacro:nema17_part_link parent="world" name="planet_3_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/satellite.STL"
-                          xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1] - 0.05} ${pallet_d_xyz[2] + 0.055}"
+                          xyz="${pallet_d_xyz[0] - 0.04} ${pallet_d_xyz[1] - 0.05} ${pallet_surface_z + 0.005}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.04" color_name="nema_gold"
                           collision_type="cylinder" collision_radius="0.008" collision_length="0.010"/>
   <xacro:nema17_part_link parent="world" name="sun_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/Sun_gear.STL"
-                          xyz="${pallet_d_xyz[0] + 0.035} ${pallet_d_xyz[1] + 0.03} ${pallet_d_xyz[2] + 0.055}"
+                          xyz="${pallet_d_xyz[0] + 0.035} ${pallet_d_xyz[1] + 0.03} ${pallet_surface_z + 0.009}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.08" color_name="nema_green"
                           collision_type="cylinder" collision_radius="0.010" collision_length="0.018"/>
   <xacro:nema17_part_link parent="world" name="carrier_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/Vodilo.STL"
-                          xyz="${pallet_d_xyz[0] + 0.035} ${pallet_d_xyz[1] - 0.03} ${pallet_d_xyz[2] + 0.055}"
+                          xyz="${pallet_d_xyz[0] + 0.035} ${pallet_d_xyz[1] - 0.03} ${pallet_surface_z + 0.007}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.12" color_name="nema_blue"
                           collision_type="cylinder" collision_radius="0.018" collision_length="0.014"/>
   <xacro:nema17_part_link parent="world" name="assembly_ring_gear_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/Spur_gear.STL"
-                          xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_xyz[2] + 0.07}"
+                          xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_surface_z + 0.005}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.12" color_name="nema_blue"
                           collision_type="cylinder" collision_radius="0.021" collision_length="0.010"/>
   <xacro:nema17_part_link parent="world" name="screw_visual"
                           mesh_path="file://$(find gearbox_sim)/meshes/nema17/screw.STL"
-                          xyz="${feeder_xyz[0]} ${feeder_xyz[1]} ${feeder_xyz[2] + 0.09}"
+                          xyz="${feeder_xyz[0]} ${feeder_xyz[1]} ${feeder_surface_z + 0.009}"
                           rpy="0 0 0" scale="${mesh_scale}" mass="0.01" color_name="nema_gray"
                           collision_type="cylinder" collision_radius="0.0025" collision_length="0.018"/>
 

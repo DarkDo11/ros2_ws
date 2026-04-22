@@ -97,6 +97,19 @@ class MotionPlannerFacade:
             )
             self.dry_run = True
 
+    def _wait_for_future(self, future, timeout_sec: float, description: str):
+        deadline = time.monotonic() + timeout_sec
+        while rclpy.ok() and not future.done():
+            if time.monotonic() >= deadline:
+                raise PlanningFailure(f"{description} timed out after {timeout_sec:.2f}s")
+            time.sleep(0.01)
+
+        if future.cancelled():
+            raise PlanningFailure(f"{description} was cancelled")
+        if future.exception() is not None:
+            raise PlanningFailure(f"{description} failed: {future.exception()}") from future.exception()
+        return future.result()
+
     def _ensure_moveit_clients(self):
         if self.moveit is None or self._moveit_clients:
             return
@@ -124,9 +137,11 @@ class MotionPlannerFacade:
         timeout_sec: float = 1.0,
     ) -> PoseStamped:
         transform = self._lookup_transform(target_frame, pose_stamped.header.frame_id, timeout_sec=timeout_sec)
-        transformed = do_transform_pose(pose_stamped, transform)
+        transformed_pose = do_transform_pose(pose_stamped.pose, transform)
+        transformed = PoseStamped()
         transformed.header.frame_id = target_frame
         transformed.header.stamp = self.node.get_clock().now().to_msg()
+        transformed.pose = transformed_pose
         return transformed
 
     def _pose_in_frame(
@@ -198,11 +213,13 @@ class MotionPlannerFacade:
         request.ik_request.timeout = duration_from_seconds(timeout_sec)
 
         future = ik_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout_sec + 0.5)
-        if not future.done() or future.result() is None:
+        result = self._wait_for_future(
+            future,
+            timeout_sec=timeout_sec + 0.5,
+            description=f"MoveIt2 IK request for {robot_name}",
+        )
+        if result is None:
             raise PlanningFailure("MoveIt2 IK request timed out")
-
-        result = future.result()
         error_code = getattr(result.error_code, "val", 1)
         if error_code != 1:
             raise PlanningFailure(f"IK failed for {robot_name} with MoveIt error code {error_code}")
@@ -248,11 +265,13 @@ class MotionPlannerFacade:
         request.start_state.joint_state = JointState()
 
         future = cart_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout_sec + 0.5)
-        if not future.done() or future.result() is None:
+        result = self._wait_for_future(
+            future,
+            timeout_sec=timeout_sec + 0.5,
+            description=f"MoveIt2 cartesian path request for {robot_name}",
+        )
+        if result is None:
             raise PlanningFailure("MoveIt2 cartesian path request timed out")
-
-        result = future.result()
         fraction = float(getattr(result, "fraction", 0.0))
         if fraction < 0.999:
             raise PlanningFailure(

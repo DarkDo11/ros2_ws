@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import time
 import threading
 from dataclasses import dataclass
 from pathlib import Path
@@ -71,6 +72,19 @@ class AssemblyStateMachine(Node):
         start_delay = self.get_parameter("start_delay_sec").get_parameter_value().double_value
         self.create_timer(start_delay, self._start_once)
         self._started = False
+
+    def _wait_for_future(self, future, timeout_sec: float, description: str):
+        deadline = time.monotonic() + timeout_sec
+        while rclpy.ok() and not future.done():
+            if time.monotonic() >= deadline:
+                raise RuntimeError(f"{description} timed out after {timeout_sec:.2f}s")
+            time.sleep(0.01)
+
+        if future.cancelled():
+            raise RuntimeError(f"{description} was cancelled")
+        if future.exception() is not None:
+            raise RuntimeError(f"{description} failed: {future.exception()}") from future.exception()
+        return future.result()
 
     def _start_once(self):
         if self._started:
@@ -151,8 +165,11 @@ class AssemblyStateMachine(Node):
         if not self.attachment_client.wait_for_service(timeout_sec=5.0):
             raise RuntimeError("Attachment service is unavailable")
         future = self.attachment_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
-        response = future.result()
+        response = self._wait_for_future(
+            future,
+            timeout_sec=5.0,
+            description=f"attachment service call for {part_name}",
+        )
         if response is None or not response.success:
             raise RuntimeError(
                 f"Attachment request failed for {part_name}: "
@@ -243,8 +260,11 @@ class AssemblyStateMachine(Node):
         if not self.press_client.wait_for_service(timeout_sec=5.0):
             raise RuntimeError("Press service is unavailable")
         future = self.press_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
-        response = future.result()
+        response = self._wait_for_future(
+            future,
+            timeout_sec=10.0,
+            description=f"press cycle {recipe_name}",
+        )
         if response is None or not response.success:
             raise RuntimeError("Press cycle failed")
 
@@ -261,14 +281,20 @@ class AssemblyStateMachine(Node):
         goal.feed_from_autofeeder = True
 
         send_future = self.screwdriver_client.send_goal_async(goal)
-        rclpy.spin_until_future_complete(self, send_future, timeout_sec=5.0)
-        goal_handle = send_future.result()
+        goal_handle = self._wait_for_future(
+            send_future,
+            timeout_sec=5.0,
+            description=f"screwdriver goal dispatch for {screw_frame}",
+        )
         if goal_handle is None or not goal_handle.accepted:
             raise RuntimeError(f"Screwdriver goal rejected for {screw_frame}")
 
         result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future, timeout_sec=10.0)
-        result = result_future.result()
+        result = self._wait_for_future(
+            result_future,
+            timeout_sec=10.0,
+            description=f"screwdriver result for {screw_frame}",
+        )
         if result is None or not result.result.success:
             raise RuntimeError(f"Screwdriver failed for {screw_frame}")
 

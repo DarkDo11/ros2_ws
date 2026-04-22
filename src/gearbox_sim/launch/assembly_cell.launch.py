@@ -34,6 +34,20 @@ def _maybe_moveit_notice(_context):
         return [LogInfo(msg="MoveIt packages are not installed in this environment. motion_planner.py will stay in dry-run fallback mode.")]
 
 
+def _build_gz_args(context):
+    pkg_share = get_package_share_directory("gearbox_sim")
+    world_file = os.path.join(pkg_share, "worlds", "assembly_cell.sdf")
+    gz_headless = LaunchConfiguration("gz_headless").perform(context).lower() == "true"
+    gz_verbose = LaunchConfiguration("gz_verbose").perform(context)
+
+    gz_args = f"-r -v {gz_verbose} {world_file}"
+    if gz_headless:
+        gz_args = f"-r -s -v {gz_verbose} {world_file}"
+
+    context.launch_configurations["gz_args"] = gz_args
+    return []
+
+
 def generate_launch_description():
     pkg_share = get_package_share_directory("gearbox_sim")
     ros_gz_sim_share = get_package_share_directory("ros_gz_sim")
@@ -41,6 +55,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
     run_state_machine = LaunchConfiguration("run_state_machine")
     planner_dry_run = LaunchConfiguration("planner_dry_run")
+    gz_args = LaunchConfiguration("gz_args")
 
     world_file = os.path.join(pkg_share, "worlds", "assembly_cell.sdf")
     xacro_file = os.path.join(pkg_share, "urdf", "main_scene.urdf.xacro")
@@ -74,7 +89,7 @@ def generate_launch_description():
 
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(ros_gz_sim_share, "launch", "gz_sim.launch.py")),
-        launch_arguments={"gz_args": f"-r -s -v 4 {world_file}"}.items(),
+        launch_arguments={"gz_args": gz_args}.items(),
     )
 
     move_group_launch = IncludeLaunchDescription(
@@ -154,9 +169,12 @@ def generate_launch_description():
             DeclareLaunchArgument("use_sim_time", default_value="true"),
             DeclareLaunchArgument("run_state_machine", default_value="true"),
             DeclareLaunchArgument("planner_dry_run", default_value="true"),
+            DeclareLaunchArgument("gz_headless", default_value="false"),
+            DeclareLaunchArgument("gz_verbose", default_value="4"),
             SetEnvironmentVariable("RCUTILS_COLORIZED_OUTPUT", "1"),
             SetEnvironmentVariable("GZ_SIM_RESOURCE_PATH", pkg_share),
             OpaqueFunction(function=_generate_scene_urdf),
+            OpaqueFunction(function=_build_gz_args),
             OpaqueFunction(function=_maybe_moveit_notice),
             gz_sim,
             move_group_launch,
