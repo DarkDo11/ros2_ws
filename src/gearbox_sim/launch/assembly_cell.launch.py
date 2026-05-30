@@ -147,7 +147,8 @@ def generate_launch_description():
 
     state_machine = Node(
         package="gearbox_sim",
-        executable="assembly_state_machine.py",
+        executable="assembly_fsm.py",
+        name="assembly_fsm",
         output="screen",
         condition=IfCondition(run_state_machine),
         parameters=[
@@ -155,6 +156,7 @@ def generate_launch_description():
                 "use_sim_time": use_sim_time,
                 "config_file": config_file,
                 "dry_run": planner_dry_run,
+                "start_delay_sec": 5.0,
             }
         ],
     )

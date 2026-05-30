@@ -33,6 +33,8 @@ install(FILES
 install(PROGRAMS
   scripts/animator.py
   scripts/assembly_demo.py
+  scripts/assembly_fsm.py
+  scripts/assembly_sequence_legacy.py
   scripts/assembly_state_machine.py
   scripts/get_joints.py
   scripts/joint_gui_teleop.py
