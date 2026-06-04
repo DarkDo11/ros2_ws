@@ -108,6 +108,11 @@
   </xacro:macro>
 
   <xacro:macro name="pallet_station" params="parent prefix xyz rpy">
+    <xacro:box_link parent="${parent}" name="${prefix}_stand"
+                    xyz="${xyz[0]} ${xyz[1]} ${(xyz[2] - 0.06) / 2.0}"
+                    rpy="0 0 0"
+                    size="${[0.20, 0.14, xyz[2] - 0.06]}"
+                    mass="20.0" material_name="steel_dark"/>
     <xacro:box_link parent="${parent}" name="${prefix}_body"
                     xyz="${xyz[0]} ${xyz[1]} ${xyz[2]}" rpy="${rpy}"
                     size="${[0.22, 0.16, 0.12]}" mass="4.0" material_name="safety_yellow"/>
@@ -115,7 +120,7 @@
                        xyz="${xyz[0]} ${xyz[1]} ${xyz[2] + 0.07}" rpy="${rpy}"/>
   </xacro:macro>
 
-  <xacro:macro name="camera_stub" params="parent prefix xyz rpy topic width:=1280 height:=960 fov:=1.05">
+  <xacro:macro name="camera_stub" params="parent prefix xyz rpy topic width:=640 height:=480 fov:=1.05">
     <link name="${prefix}_camera_link">
       <inertial>
         <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -395,47 +400,134 @@
   </xacro:macro>
 
   <xacro:macro name="press_module" params="parent prefix xyz rpy">
-    <xacro:box_link parent="${parent}" name="${prefix}base_link"
-                    xyz="${xyz[0]} ${xyz[1]} ${xyz[2]}" rpy="${rpy}"
-                    size="${[0.34, 0.26, 0.18]}" mass="60.0" material_name="safety_yellow"/>
-    <xacro:box_link parent="${parent}" name="${prefix}column_link"
-                    xyz="${xyz[0]} ${xyz[1]} ${xyz[2] + 0.44}" rpy="${rpy}"
-                    size="${[0.10, 0.12, 0.70]}" mass="75.0" material_name="steel_dark"/>
+    <!-- Single rigid mount: root_link carries the press position AND rotation.
+         It sits at (xyz[0], xyz[1], 0) on the floor so that every child's local
+         Z equals its world height (a Z-only rpy never changes Z), while X/Y
+         offsets are LOCAL to the press centre.  Passing rpy here now rotates the
+         entire press as a rigid body instead of spinning each wall in place. -->
+    <link name="${prefix}root_link"/>
+    <joint name="${prefix}root_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}root_link"/>
+      <origin xyz="${xyz[0]} ${xyz[1]} 0" rpy="${rpy}"/>
+    </joint>
 
+    <!-- ── 4 legs from floor to bottom frame (local offsets about press centre) ── -->
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}leg_fl"
+                    xyz="0.12 0.09 ${(xyz[2] - 0.09) / 2.0}"
+                    rpy="0 0 0" size="${[0.06, 0.06, xyz[2] - 0.09]}"
+                    mass="8.0" material_name="steel_dark"/>
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}leg_fr"
+                    xyz="0.12 -0.09 ${(xyz[2] - 0.09) / 2.0}"
+                    rpy="0 0 0" size="${[0.06, 0.06, xyz[2] - 0.09]}"
+                    mass="8.0" material_name="steel_dark"/>
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}leg_rl"
+                    xyz="-0.12 0.09 ${(xyz[2] - 0.09) / 2.0}"
+                    rpy="0 0 0" size="${[0.06, 0.06, xyz[2] - 0.09]}"
+                    mass="8.0" material_name="steel_dark"/>
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}leg_rr"
+                    xyz="-0.12 -0.09 ${(xyz[2] - 0.09) / 2.0}"
+                    rpy="0 0 0" size="${[0.06, 0.06, xyz[2] - 0.09]}"
+                    mass="8.0" material_name="steel_dark"/>
+
+    <!-- ── H-frame press structure ── -->
+
+    <!-- Lower base frame: 0.50×0.38×0.05, center at xyz[2]-0.02 -->
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}base_link"
+                    xyz="0 0 ${xyz[2] - 0.02}" rpy="0 0 0"
+                    size="${[0.50, 0.38, 0.05]}" mass="80.0" material_name="steel_dark"/>
+
+    <!-- Bolster / work table: 0.42×0.30×0.05, center at xyz[2]+0.09
+         bed_frame is fixed at xyz[2]+0.13 (top surface +0.025 above center) -->
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}bolster_link"
+                    xyz="0 0 ${xyz[2] + 0.09}" rpy="0 0 0"
+                    size="${[0.42, 0.30, 0.05]}" mass="40.0" material_name="steel_light"/>
+
+    <!-- Left side frame column: 0.06×0.38×0.68, center at xyz[2]+0.40 -->
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}column_left_link"
+                    xyz="-0.19 0 ${xyz[2] + 0.40}" rpy="0 0 0"
+                    size="${[0.06, 0.38, 0.68]}" mass="55.0" material_name="steel_dark"/>
+
+    <!-- Right side frame column: 0.06×0.38×0.68, center at xyz[2]+0.40 -->
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}column_right_link"
+                    xyz="0.19 0 ${xyz[2] + 0.40}" rpy="0 0 0"
+                    size="${[0.06, 0.38, 0.68]}" mass="55.0" material_name="steel_dark"/>
+
+    <!-- Crown / top crosshead beam: 0.50×0.38×0.08, center at xyz[2]+0.78 -->
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}crown_link"
+                    xyz="0 0 ${xyz[2] + 0.78}" rpy="0 0 0"
+                    size="${[0.50, 0.38, 0.08]}" mass="90.0" material_name="steel_dark"/>
+
+    <!-- Hydraulic cylinder body: 0.14×0.14×0.26, center at xyz[2]+0.97 -->
+    <xacro:box_link parent="${prefix}root_link" name="${prefix}cylinder_link"
+                    xyz="0 0 ${xyz[2] + 0.97}" rpy="0 0 0"
+                    size="${[0.14, 0.14, 0.26]}" mass="35.0" material_name="steel_dark"/>
+
+    <!-- ── Ram / plunger assembly (prismatic joint) ──
+         crown_link center z = xyz[2]+0.78, half-height = 0.04 → bottom at xyz[2]+0.74
+         ram_joint origin at (0, 0, -0.25) from crown_link
+         → absolute z = xyz[2]+0.78 - 0.25 = xyz[2]+0.53
+         At lower=0: ram plate center at xyz[2]+0.53 - 0.012 ≈ xyz[2]+0.518
+         At upper=0.12: ram plate center at xyz[2]+0.398  (well within work zone above bolster top ~xyz[2]+0.115)
+    -->
     <link name="${prefix}ram_link">
       <inertial>
-        <origin xyz="0 0 0.08" rpy="0 0 0"/>
-        <mass value="12.0"/>
-        <xacro:box_inertia mass="12.0" x="0.10" y="0.10" z="0.16"/>
+        <origin xyz="0 0 0.11" rpy="0 0 0"/>
+        <mass value="18.0"/>
+        <xacro:box_inertia mass="18.0" x="0.28" y="0.22" z="0.245"/>
       </inertial>
+      <!-- Piston rod (shaft coming down from cylinder) -->
       <visual>
-        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <origin xyz="0 0 0.11" rpy="0 0 0"/>
         <geometry>
-          <box size="0.10 0.10 0.16"/>
+          <box size="0.06 0.06 0.22"/>
+        </geometry>
+        <material name="steel_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.11" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.06 0.06 0.22"/>
+        </geometry>
+      </collision>
+      <!-- Ram plate (sliding platen) -->
+      <visual>
+        <origin xyz="0 0 -0.012" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.28 0.22 0.025"/>
         </geometry>
         <material name="steel_light"/>
       </visual>
       <collision>
-        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <origin xyz="0 0 -0.012" rpy="0 0 0"/>
         <geometry>
-          <box size="0.10 0.10 0.16"/>
+          <box size="0.28 0.22 0.025"/>
         </geometry>
       </collision>
     </link>
+
+    <!-- ram_joint: parent = crown_link, child = ram_link
+         origin xyz="0 0 -0.25" places the joint 0.25m below crown centre -->
     <joint name="${prefix}ram_joint" type="prismatic">
-      <parent link="${prefix}column_link"/>
+      <parent link="${prefix}crown_link"/>
       <child link="${prefix}ram_link"/>
-      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.25" rpy="0 0 0"/>
       <axis xyz="0 0 -1"/>
       <limit lower="0.0" upper="0.12" effort="5000" velocity="0.08"/>
       <dynamics damping="40.0" friction="6.0"/>
     </joint>
 
-    <xacro:fixed_frame parent="${parent}" name="${prefix}bed_frame"
-                       xyz="${xyz[0]} ${xyz[1]} ${xyz[2] + 0.13}" rpy="${rpy}"/>
+    <!-- Frames -->
+    <!-- bed_frame: where robot places parts — fixed at xyz[2]+0.13 (bolster top
+         surface). Local to root_link: X/Y at press centre, rpy "π 0 0" applied
+         on top of root rotation so the place-Z axis still points down in world. -->
+    <xacro:fixed_frame parent="${prefix}root_link" name="${prefix}bed_frame"
+                       xyz="0 0 ${xyz[2] + 0.13}" rpy="3.14159 0 0"/>
+    <!-- ram_frame: TCP of press at tip of piston rod -->
     <xacro:fixed_frame parent="${prefix}ram_link" name="${prefix}ram_frame"
                        xyz="0 0 0.10" rpy="0 0 0"/>
 
+    <!-- ── Gazebo plugins ── -->
     <gazebo>
       <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
         <topic>/joint_states</topic>

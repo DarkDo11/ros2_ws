@@ -51,7 +51,7 @@ CMAKE_AR:FILEPATH=/usr/bin/ar
 
 //Choose the type of build, options are: None Debug Release RelWithDebInfo
 // MinSizeRel ...
-CMAKE_BUILD_TYPE:STRING=
+CMAKE_BUILD_TYPE:STRING=RelWithDebInfo
 
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
@@ -303,7 +303,7 @@ SITE:STRING=dark
 TinyXML2_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/tinyxml2
 
 //Path to a library.
-_lib:FILEPATH=/opt/ros/jazzy/lib/libpal_statistics.so
+_lib:FILEPATH=/home/dark/ros2_ws/install/robotiq_2f_gripper_interfaces/lib/librobotiq_2f_gripper_interfaces.so
 
 //The directory containing a CMake configuration file for action_msgs.
 action_msgs_DIR:PATH=/opt/ros/jazzy/share/action_msgs/cmake
@@ -491,8 +491,11 @@ robotiq_2f_gripper_hardware_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 robotiq_2f_gripper_hardware_SOURCE_DIR:STATIC=/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_hardware
 
+//The directory containing a CMake configuration file for robotiq_2f_gripper_interfaces.
+robotiq_2f_gripper_interfaces_DIR:PATH=/home/dark/ros2_ws/install/robotiq_2f_gripper_interfaces/share/robotiq_2f_gripper_interfaces/cmake
+
 //The directory containing a CMake configuration file for robotiq_2f_gripper_msgs.
-robotiq_2f_gripper_msgs_DIR:PATH=robotiq_2f_gripper_msgs_DIR-NOTFOUND
+robotiq_2f_gripper_msgs_DIR:PATH=/home/dark/ros2_ws/install/robotiq_2f_gripper_msgs/share/robotiq_2f_gripper_msgs/cmake
 
 //The directory containing a CMake configuration file for rosgraph_msgs.
 rosgraph_msgs_DIR:PATH=/opt/ros/jazzy/share/rosgraph_msgs/cmake
@@ -545,6 +548,9 @@ rosidl_typesupport_introspection_cpp_DIR:PATH=/opt/ros/jazzy/share/rosidl_typesu
 //The directory containing a CMake configuration file for sensor_msgs.
 sensor_msgs_DIR:PATH=/opt/ros/jazzy/share/sensor_msgs/cmake
 
+//The directory containing a CMake configuration file for serial.
+serial_DIR:PATH=/home/dark/ros2_ws/install/serial/share/serial/cmake
+
 //The directory containing a CMake configuration file for service_msgs.
 service_msgs_DIR:PATH=/opt/ros/jazzy/share/service_msgs/cmake
 
@@ -580,6 +586,9 @@ urdfdom_DIR:PATH=/opt/ros/jazzy/lib/x86_64-linux-gnu/urdfdom/cmake
 
 //The directory containing a CMake configuration file for urdfdom_headers.
 urdfdom_headers_DIR:PATH=/opt/ros/jazzy/lib/x86_64-linux-gnu/urdfdom_headers/cmake
+
+//The directory containing a CMake configuration file for yaml-cpp.
+yaml-cpp_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/yaml-cpp
 
 
 ########################
@@ -818,7 +827,7 @@ _Python3_INTERPRETER_SIGNATURE:INTERNAL=4c8bfa8951e99fa32e4000a94f8c04a2
 //NumPy reason failure
 _Python3_NumPy_REASON_FAILURE:INTERNAL=
 //Index for unique symlink install targets
-__AMENT_CMAKE_SYMLINK_INSTALL_TARGETS_INDEX:INTERNAL=0
+__AMENT_CMAKE_SYMLINK_INSTALL_TARGETS_INDEX:INTERNAL=1
 __pkg_config_arguments__OPENSSL:INTERNAL=QUIET;openssl
 __pkg_config_checked__OPENSSL:INTERNAL=1
 //ADVANCED property for variable: boost_headers_DIR

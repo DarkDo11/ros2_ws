@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import subprocess
+import threading
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Set
 
 import rclpy
 import yaml
-from geometry_msgs.msg import Pose
 from rclpy.node import Node
-from ros_gz_interfaces.msg import Entity
-from ros_gz_interfaces.srv import SetEntityPose
 from tf2_ros import Buffer, TransformException, TransformListener
 
 from gearbox_sim.srv import SetAttachment
+
+_GZ_SET_POSE_SVC = "/world/assembly_world/set_pose"
 
 
 @dataclass
@@ -25,6 +26,25 @@ class AttachmentState:
     part_link: str
 
 
+def _gz_set_pose_bg(model_name: str, x: float, y: float, z: float,
+                    qx: float = 0.0, qy: float = 0.0,
+                    qz: float = 0.0, qw: float = 1.0) -> None:
+    """Call gz service to move a model; runs in a daemon thread (non-blocking)."""
+    req = (
+        f'name: "{model_name}" '
+        f'position: {{x: {x}, y: {y}, z: {z}}} '
+        f'orientation: {{x: {qx}, y: {qy}, z: {qz}, w: {qw}}}'
+    )
+    subprocess.run(
+        ["gz", "service", "-s", _GZ_SET_POSE_SVC,
+         "--reqtype", "gz.msgs.Pose",
+         "--reptype", "gz.msgs.Boolean",
+         "--timeout", "800",
+         "--req", req],
+        capture_output=True,
+    )
+
+
 class GraspAttacher(Node):
     def __init__(self):
         super().__init__("grasp_attacher")
@@ -32,8 +52,6 @@ class GraspAttacher(Node):
             Path(__file__).resolve().parents[1] / "config" / "assembly_cell.yaml"
         )
         self.declare_parameter("config_file", str(default_config))
-        self.declare_parameter("set_pose_service", "/world/assembly_world/set_pose")
-        self.declare_parameter("entity_prefix", "gearbox_assembly_cell::")
         self.declare_parameter("sync_entity_poses", False)
 
         config_file = self.get_parameter("config_file").get_parameter_value().string_value
@@ -43,6 +61,8 @@ class GraspAttacher(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self, spin_thread=True)
         self.attachments: Dict[str, AttachmentState] = {}
+        # parts currently being moved (deduplicate in-flight gz calls)
+        self._in_flight: Set[str] = set()
 
         self.service = self.create_service(
             SetAttachment,
@@ -52,18 +72,15 @@ class GraspAttacher(Node):
         self.sync_entity_poses = (
             self.get_parameter("sync_entity_poses").get_parameter_value().bool_value
         )
-        self.entity_prefix = (
-            self.get_parameter("entity_prefix").get_parameter_value().string_value
-        )
-        self.set_pose_client: Optional[rclpy.client.Client] = None
         if self.sync_entity_poses:
-            service_name = (
-                self.get_parameter("set_pose_service").get_parameter_value().string_value
-            )
-            self.set_pose_client = self.create_client(SetEntityPose, service_name)
             self.create_timer(0.05, self._sync_attached_entities)
+            self.create_timer(0.15, self._sync_all_part_frames)
 
-    def _handle_attachment(self, request: SetAttachment.Request, response: SetAttachment.Response):
+    def _handle_attachment(
+        self,
+        request: SetAttachment.Request,
+        response: SetAttachment.Response,
+    ):
         if request.attach:
             self.attachments[request.part_name] = AttachmentState(
                 robot_name=request.robot_name,
@@ -85,15 +102,26 @@ class GraspAttacher(Node):
         self.get_logger().info(response.message)
         return response
 
-    def _sync_attached_entities(self):
-        if self.set_pose_client is None:
+    def _move_model(self, model_name: str, x: float, y: float, z: float,
+                    qx: float = 0.0, qy: float = 0.0,
+                    qz: float = 0.0, qw: float = 1.0) -> None:
+        """Spawn a background thread to move model_name; skips if already in-flight."""
+        if model_name in self._in_flight:
             return
-        if not self.set_pose_client.service_is_ready():
-            self.set_pose_client.wait_for_service(timeout_sec=0.0)
-            if not self.set_pose_client.service_is_ready():
-                return
+        self._in_flight.add(model_name)
 
-        for attachment in self.attachments.values():
+        def _run():
+            try:
+                _gz_set_pose_bg(model_name, x, y, z, qx, qy, qz, qw)
+            finally:
+                self._in_flight.discard(model_name)
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    def _sync_attached_entities(self):
+        """Continuously move attached parts to follow the robot TCP (20 Hz)."""
+        part_links = self.config.get("part_links", {})
+        for attachment in list(self.attachments.values()):
             try:
                 transform = self.tf_buffer.lookup_transform(
                     "world",
@@ -106,17 +134,36 @@ class GraspAttacher(Node):
                 )
                 continue
 
-            request = SetEntityPose.Request()
-            request.entity = Entity(
-                name=f"{self.entity_prefix}{attachment.part_link}",
-                type=Entity.LINK,
+            model_name = part_links.get(attachment.part_name, attachment.part_name)
+            t = transform.transform
+            self._move_model(
+                model_name,
+                t.translation.x, t.translation.y, t.translation.z,
+                t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w,
             )
-            request.pose = Pose()
-            request.pose.position.x = transform.transform.translation.x
-            request.pose.position.y = transform.transform.translation.y
-            request.pose.position.z = transform.transform.translation.z
-            request.pose.orientation = transform.transform.rotation
-            self.set_pose_client.call_async(request)
+
+    def _sync_all_part_frames(self):
+        """Move all unattached parts to their current TF frame positions (6.7 Hz)."""
+        part_links = self.config.get("part_links", {})
+        for part_name, model_name in part_links.items():
+            if part_name in self.attachments:
+                continue
+            try:
+                transform = self.tf_buffer.lookup_transform(
+                    "world",
+                    f"{part_name}_current_frame",
+                    rclpy.time.Time(),
+                    timeout=rclpy.duration.Duration(seconds=0.0),
+                )
+            except Exception:
+                continue
+
+            t = transform.transform
+            self._move_model(
+                model_name,
+                t.translation.x, t.translation.y, t.translation.z,
+                t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w,
+            )
 
 
 def main():

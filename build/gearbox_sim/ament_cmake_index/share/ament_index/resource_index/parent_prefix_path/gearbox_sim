@@ -1,1 +1,1 @@
-/home/dark/ros2_ws/install/robotiq_2f_gripper_description:/home/dark/ros2_ws/install/gearbox_sim:/opt/ros/jazzy
+/home/dark/ros2_ws/install/robotiq_2f_gripper_hardware:/home/dark/ros2_ws/install/robotiq_2f_gripper_interfaces:/home/dark/ros2_ws/install/serial:/home/dark/ros2_ws/install/robotiq_2f_gripper_msgs:/home/dark/ros2_ws/install/robotiq_2f_gripper_description:/home/dark/ros2_ws/install/gearbox_sim:/opt/ros/jazzy

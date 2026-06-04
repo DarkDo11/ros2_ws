@@ -5,7 +5,7 @@ set(gearbox_sim_BUILD_DEPENDS "builtin_interfaces" "geometry_msgs" "sensor_msgs"
 set(gearbox_sim_BUILDTOOL_DEPENDS "ament_cmake" "rosidl_default_generators")
 set(gearbox_sim_BUILD_EXPORT_DEPENDS "builtin_interfaces" "geometry_msgs" "sensor_msgs" "trajectory_msgs" "action_msgs")
 set(gearbox_sim_BUILDTOOL_EXPORT_DEPENDS )
-set(gearbox_sim_EXEC_DEPENDS "joint_state_publisher_gui" "robot_state_publisher" "rviz2" "xacro" "rclpy" "launch" "launch_ros" "ros_gz_bridge" "ros_gz_image" "ros_gz_sim" "rosgraph_msgs" "tf2_ros" "tf2_geometry_msgs" "python3-yaml" "python3-matplotlib" "python3-numpy" "moveit_configs_utils" "moveit_msgs" "moveit_ros_move_group" "moveit_planners_ompl" "moveit_simple_controller_manager" "ur_description" "rosidl_default_runtime" "builtin_interfaces" "geometry_msgs" "sensor_msgs" "trajectory_msgs" "action_msgs")
+set(gearbox_sim_EXEC_DEPENDS "joint_state_publisher_gui" "robot_state_publisher" "rviz2" "xacro" "rclpy" "launch" "launch_ros" "ros_gz_bridge" "ros_gz_image" "ros_gz_sim" "rosgraph_msgs" "tf2_ros" "tf2_geometry_msgs" "yasmin" "yasmin_ros" "yasmin_viewer" "python3-yaml" "python3-matplotlib" "python3-numpy" "moveit_configs_utils" "moveit_msgs" "moveit_ros_move_group" "moveit_planners_ompl" "moveit_simple_controller_manager" "ur_description" "rosidl_default_runtime" "builtin_interfaces" "geometry_msgs" "sensor_msgs" "trajectory_msgs" "action_msgs")
 set(gearbox_sim_TEST_DEPENDS )
 set(gearbox_sim_GROUP_DEPENDS )
 set(gearbox_sim_MEMBER_OF_GROUPS "rosidl_interface_packages")

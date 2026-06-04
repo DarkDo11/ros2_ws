@@ -77,18 +77,18 @@ parts:
   carrier: pallet_d_carrier_pick_frame
 
 part_links:
-  lower_housing: lower_housing_visual
-  main_bearing: main_bearing_visual
-  cover: cover_visual
-  small_bearing: small_bearing_visual
-  housing: housing_visual
-  ring_gear: ring_gear_visual
-  planet_1: planet_1_visual
-  planet_2: planet_2_visual
-  planet_3: planet_3_visual
-  sun_gear: sun_visual
-  carrier: carrier_visual
-
+  lower_housing: lower_housing
+  main_bearing: main_bearing
+  cover: cover
+  small_bearing: small_bearing
+  housing: housing
+  ring_gear: ring_gear
+  planet_1: planet_1
+  planet_2: planet_2
+  planet_3: planet_3
+  sun_gear: sun_gear
+  carrier: carrier
+  assembled_gearbox: assembled_gearbox
 assembly:
   screw_frames:
     - assembly_screw_1_frame
@@ -97,6 +97,9 @@ assembly:
     - assembly_screw_4_frame
   output_frame: output_tray_drop_frame
   feeder_frame: autofeeder_pick_frame
+  assembled_x: 0.66   # world X of assembly table centre (for assembled_gearbox visual)
+  assembled_y: 0.39   # world Y of assembly table centre
+  assembled_z: 0.83   # world Z of assembly table surface (base of finished gearbox)
 
 services:
   press_service: /press/run_cycle

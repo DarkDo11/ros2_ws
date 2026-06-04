@@ -4,11 +4,12 @@ import tempfile
 
 from ament_index_python.packages import PackageNotFoundError, get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo, OpaqueFunction, SetEnvironmentVariable, TimerAction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, LogInfo, OpaqueFunction, SetEnvironmentVariable, TimerAction
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def _generate_scene_urdf(context):
@@ -37,14 +38,16 @@ def _maybe_moveit_notice(_context):
 def _build_gz_args(context):
     pkg_share = get_package_share_directory("gearbox_sim")
     world_file = os.path.join(pkg_share, "worlds", "assembly_cell.sdf")
-    gz_headless = LaunchConfiguration("gz_headless").perform(context).lower() == "true"
     gz_verbose = LaunchConfiguration("gz_verbose").perform(context)
 
-    gz_args = f"-r -v {gz_verbose} {world_file}"
-    if gz_headless:
-        gz_args = f"-r -s -v {gz_verbose} {world_file}"
-
-    context.launch_configurations["gz_args"] = gz_args
+    # Run the SERVER headless (-s). On NVIDIA + Gazebo Harmonic, a combined
+    # server+GUI process makes the GUI's GLX context collide with the server's
+    # camera-sensor EGL render context: the camera RenderThread starts, advertises
+    # the /cameras/* topics, then dies ("egl: failed to create dri2 screen" ->
+    # SensorsPrivate::RenderThread stopped) and no frames are ever published.
+    # Splitting the headless server (owns camera rendering) from a separate GUI
+    # process keeps the camera render thread alive.
+    context.launch_configurations["gz_args"] = f"-r -s -v {gz_verbose} {world_file}"
     return []
 
 
@@ -60,7 +63,7 @@ def generate_launch_description():
     world_file = os.path.join(pkg_share, "worlds", "assembly_cell.sdf")
     xacro_file = os.path.join(pkg_share, "urdf", "main_scene.urdf.xacro")
     config_file = os.path.join(pkg_share, "config", "assembly_cell.yaml")
-    robot_description = Command([FindExecutable(name="xacro"), " ", xacro_file])
+    robot_description = ParameterValue(Command([FindExecutable(name="xacro"), " ", xacro_file]), value_type=str)
 
     topic_bridge = Node(
         package="ros_gz_bridge",
@@ -92,6 +95,15 @@ def generate_launch_description():
         launch_arguments={"gz_args": gz_args}.items(),
     )
 
+    # Separate GUI process (server runs headless for camera rendering). Started
+    # after a short delay so the server is up; its OpenGL/GLX context lives in a
+    # different process and no longer kills the server-side camera render thread.
+    gz_gui = ExecuteProcess(
+        cmd=["gz", "sim", "-g", "-v", "2"],
+        output="screen",
+        condition=IfCondition(PythonExpression(["'", LaunchConfiguration("gz_gui"), "' == 'true'"])),
+    )
+
     move_group_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(pkg_share, "launch", "move_group.launch.py")),
         condition=IfCondition(PythonExpression(["'", planner_dry_run, "' == 'false'"])),
@@ -119,6 +131,19 @@ def generate_launch_description():
         parameters=[{"use_sim_time": use_sim_time}],
     )
 
+    ft_monitor = Node(
+        package="gearbox_sim",
+        executable="ft_monitor.py",
+        output="screen",
+        parameters=[
+            {
+                "use_sim_time": use_sim_time,
+                "force_threshold_n": 5.0,
+                "torque_threshold_nm": 1.0,
+            }
+        ],
+    )
+
     grasp_attacher = Node(
         package="gearbox_sim",
         executable="grasp_attacher.py",
@@ -127,7 +152,7 @@ def generate_launch_description():
             {
                 "use_sim_time": use_sim_time,
                 "config_file": config_file,
-                "sync_entity_poses": False,
+                "sync_entity_poses": True,
             }
         ],
     )
@@ -165,6 +190,21 @@ def generate_launch_description():
     camera_transfer = Node(package="ros_gz_image", executable="image_bridge", arguments=["/cameras/transfer/image_raw"], output="screen")
     camera_assembly = Node(package="ros_gz_image", executable="image_bridge", arguments=["/cameras/assembly/image_raw"], output="screen")
     camera_screw = Node(package="ros_gz_image", executable="image_bridge", arguments=["/cameras/screw/image_raw"], output="screen")
+    camera_output = Node(package="ros_gz_image", executable="image_bridge", arguments=["/cameras/output/image_raw"], output="screen")
+
+    part_spawner = Node(
+        package="gearbox_sim",
+        executable="part_spawner.py",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+    )
+
+    yasmin_viewer = Node(
+        package="yasmin_viewer",
+        executable="yasmin_viewer_node",
+        output="screen",
+        parameters=[{"host": "localhost", "port": 5000}],
+    )
 
     return LaunchDescription(
         [
@@ -172,6 +212,7 @@ def generate_launch_description():
             DeclareLaunchArgument("run_state_machine", default_value="true"),
             DeclareLaunchArgument("planner_dry_run", default_value="true"),
             DeclareLaunchArgument("gz_headless", default_value="false"),
+            DeclareLaunchArgument("gz_gui", default_value="true"),
             DeclareLaunchArgument("gz_verbose", default_value="4"),
             SetEnvironmentVariable("RCUTILS_COLORIZED_OUTPUT", "1"),
             SetEnvironmentVariable("GZ_SIM_RESOURCE_PATH", pkg_share),
@@ -179,9 +220,11 @@ def generate_launch_description():
             OpaqueFunction(function=_build_gz_args),
             OpaqueFunction(function=_maybe_moveit_notice),
             gz_sim,
+            gz_gui,
             move_group_launch,
             topic_bridge,
             robot_state_publisher,
+            yasmin_viewer,
             TimerAction(
                 period=4.0,
                 actions=[
@@ -194,11 +237,17 @@ def generate_launch_description():
                             grasp_attacher,
                             motion_planner,
                             state_machine,
+                            ft_monitor,
                             camera_press,
                             camera_transfer,
                             camera_assembly,
                             camera_screw,
+                            camera_output,
                         ],
+                    ),
+                    TimerAction(
+                        period=8.0,
+                        actions=[part_spawner],
                     ),
                 ],
             ),

@@ -314,3 +314,72 @@ endfunction()
 message(STATUS "Execute custom install script")
 
 # begin of custom install code
+
+# install(FILES "hardware_interface_plugin.xml" "DESTINATION" "share/robotiq_2f_gripper_interfaces/")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "hardware_interface_plugin.xml" "DESTINATION" "share/robotiq_2f_gripper_interfaces/")
+
+# install(FILES "/opt/ros/jazzy/lib/python3.12/site-packages/ament_package/template/environment_hook/library_path.sh" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/opt/ros/jazzy/lib/python3.12/site-packages/ament_package/template/environment_hook/library_path.sh" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/library_path.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/library_path.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+
+# install(DIRECTORY "include/" "DESTINATION" "include")
+ament_cmake_symlink_install_directory("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" DIRECTORY "include/" "DESTINATION" "include")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/robotiq_2f_gripper_interfaces" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/robotiq_2f_gripper_interfaces" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_index/share/ament_index/resource_index/parent_prefix_path/robotiq_2f_gripper_interfaces" "DESTINATION" "share/ament_index/resource_index/parent_prefix_path")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_index/share/ament_index/resource_index/parent_prefix_path/robotiq_2f_gripper_interfaces" "DESTINATION" "share/ament_index/resource_index/parent_prefix_path")
+
+# install(FILES "/opt/ros/jazzy/share/ament_cmake_core/cmake/environment_hooks/environment/ament_prefix_path.sh" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/opt/ros/jazzy/share/ament_cmake_core/cmake/environment_hooks/environment/ament_prefix_path.sh" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/ament_prefix_path.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/ament_prefix_path.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+
+# install(FILES "/opt/ros/jazzy/share/ament_cmake_core/cmake/environment_hooks/environment/path.sh" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/opt/ros/jazzy/share/ament_cmake_core/cmake/environment_hooks/environment/path.sh" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/path.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/path.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces/environment")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/local_setup.bash" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/local_setup.bash" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/local_setup.sh" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/local_setup.sh" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/local_setup.zsh" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/local_setup.zsh" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/local_setup.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/local_setup.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/package.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_environment_hooks/package.dsv" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_index/share/ament_index/resource_index/packages/robotiq_2f_gripper_interfaces" "DESTINATION" "share/ament_index/resource_index/packages")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_index/share/ament_index/resource_index/packages/robotiq_2f_gripper_interfaces" "DESTINATION" "share/ament_index/resource_index/packages")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_index/share/ament_index/resource_index/hardware_interface__pluginlib__plugin/robotiq_2f_gripper_interfaces" "DESTINATION" "share/ament_index/resource_index/hardware_interface__pluginlib__plugin")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_index/share/ament_index/resource_index/hardware_interface__pluginlib__plugin/robotiq_2f_gripper_interfaces" "DESTINATION" "share/ament_index/resource_index/hardware_interface__pluginlib__plugin")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_export_targets/ament_cmake_export_targets-extras.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_export_targets/ament_cmake_export_targets-extras.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_export_dependencies/ament_cmake_export_dependencies-extras.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_export_dependencies/ament_cmake_export_dependencies-extras.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_export_include_directories/ament_cmake_export_include_directories-extras.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_export_include_directories/ament_cmake_export_include_directories-extras.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_export_libraries/ament_cmake_export_libraries-extras.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_export_libraries/ament_cmake_export_libraries-extras.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+
+# install(FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_core/robotiq_2f_gripper_interfacesConfig.cmake" "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_core/robotiq_2f_gripper_interfacesConfig-version.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_core/robotiq_2f_gripper_interfacesConfig.cmake" "/home/dark/ros2_ws/build/robotiq_2f_gripper_interfaces/ament_cmake_core/robotiq_2f_gripper_interfacesConfig-version.cmake" "DESTINATION" "share/robotiq_2f_gripper_interfaces/cmake")
+
+# install(FILES "/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces/package.xml" "DESTINATION" "share/robotiq_2f_gripper_interfaces")
+ament_cmake_symlink_install_files("/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces" FILES "/home/dark/ros2_ws/src/robotiq_2f_gripper_ros2/robotiq_2f_gripper_interfaces/package.xml" "DESTINATION" "share/robotiq_2f_gripper_interfaces")

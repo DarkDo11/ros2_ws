@@ -6,5 +6,5 @@ C_DEFINES = -DROSIDL_TYPESUPPORT_INTROSPECTION_C_BUILDING_DLL_robotiq_2f_gripper
 
 C_INCLUDES = -I/home/dark/ros2_ws/build/robotiq_2f_gripper_msgs/rosidl_typesupport_introspection_c -I/home/dark/ros2_ws/build/robotiq_2f_gripper_msgs/rosidl_generator_c -isystem /opt/ros/jazzy/include/std_msgs -isystem /opt/ros/jazzy/include/builtin_interfaces -isystem /opt/ros/jazzy/include/rosidl_runtime_c -isystem /opt/ros/jazzy/include/rcutils -isystem /opt/ros/jazzy/include/rosidl_typesupport_interface -isystem /opt/ros/jazzy/include/service_msgs -isystem /opt/ros/jazzy/include/action_msgs -isystem /opt/ros/jazzy/include/unique_identifier_msgs -isystem /opt/ros/jazzy/include/rosidl_typesupport_introspection_c
 
-C_FLAGS = -std=gnu11 -fPIC -Wall
+C_FLAGS = -O2 -g -DNDEBUG -std=gnu11 -fPIC -Wall
 

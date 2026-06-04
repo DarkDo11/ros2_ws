@@ -6,5 +6,5 @@ C_DEFINES = -DROS_PACKAGE_NAME=\"robotiq_2f_gripper_msgs\" -Drobotiq_2f_gripper_
 
 C_INCLUDES = -I/home/dark/ros2_ws/build/robotiq_2f_gripper_msgs/rosidl_generator_c -I/home/dark/ros2_ws/build/robotiq_2f_gripper_msgs/rosidl_generator_py -I/opt/ros/jazzy/include/rmw -I/home/dark/ros2_ws/build/robotiq_2f_gripper_msgs/rosidl_typesupport_introspection_c -isystem /usr/include/python3.12 -isystem /opt/ros/jazzy/include/std_msgs -isystem /opt/ros/jazzy/include/builtin_interfaces -isystem /opt/ros/jazzy/include/rosidl_runtime_c -isystem /opt/ros/jazzy/include/rcutils -isystem /opt/ros/jazzy/include/rosidl_typesupport_interface -isystem /opt/ros/jazzy/include/service_msgs -isystem /opt/ros/jazzy/include/action_msgs -isystem /opt/ros/jazzy/include/unique_identifier_msgs -isystem /opt/ros/jazzy/include/rosidl_typesupport_introspection_c -isystem /opt/ros/jazzy/include/rosidl_typesupport_c -isystem /opt/ros/jazzy/include/rosidl_dynamic_typesupport
 
-C_FLAGS = -fPIC -Wall -Wextra
+C_FLAGS = -O2 -g -DNDEBUG -fPIC -Wall -Wextra
 

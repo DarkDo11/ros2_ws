@@ -39,9 +39,12 @@ install(PROGRAMS
   scripts/get_joints.py
   scripts/joint_gui_teleop.py
   scripts/motion_planner.py
+  scripts/ur_kinematics.py
   scripts/press_controller.py
   scripts/grasp_attacher.py
   scripts/screwdriver_server.py
+  scripts/part_spawner.py
+  scripts/ft_monitor.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
