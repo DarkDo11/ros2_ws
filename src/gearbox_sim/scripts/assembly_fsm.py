@@ -12,6 +12,8 @@ import subprocess as _sp
 import rclpy
 import yaml
 from geometry_msgs.msg import TransformStamped
+from builtin_interfaces.msg import Duration
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from tf2_ros import Buffer, TransformBroadcaster, TransformListener
@@ -282,6 +284,17 @@ class AssemblyFsmNode(Node):
             self.config["services"]["screwdriver_action"],
         )
 
+        # Gripper finger-command publishers (visual close/open on top of the
+        # logical attacher). Only the two gripper-equipped arms have fingers.
+        self._gripper_pubs = {
+            "ur5e_press": self.create_publisher(
+                JointTrajectory, "/ur5e_press_gripper/joint_trajectory", 10
+            ),
+            "ur5e_assembly": self.create_publisher(
+                JointTrajectory, "/ur5e_assembly_gripper/joint_trajectory", 10
+            ),
+        }
+
         self.tf_broadcaster = TransformBroadcaster(self)
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -437,6 +450,33 @@ class AssemblyFsmNode(Node):
         model_name = self.config.get("part_links", {}).get(part_name, part_name)
         self._remove_gz_model(model_name)
 
+    def _set_gripper(self, robot_name: str, closed: bool) -> None:
+        """Visually close/open the gripper fingers (no effect for armless states).
+
+        closed=True drives both prismatic finger joints to 0.022 m (grip);
+        closed=False returns them to 0.0 (open). Safe no-op for arms without
+        fingers (e.g. ur3e_screw).
+        """
+        pub = self._gripper_pubs.get(robot_name)
+        if pub is None:
+            return
+        target = 0.022 if closed else 0.0
+        msg = JointTrajectory()
+        msg.joint_names = [
+            f"{robot_name}_left_finger_joint",
+            f"{robot_name}_right_finger_joint",
+        ]
+        point = JointTrajectoryPoint()
+        point.positions = [target, target]
+        point.time_from_start = Duration(sec=0, nanosec=400_000_000)
+        msg.points.append(point)
+        pub.publish(msg)
+        # Give the controller a moment to drive the fingers before the next move.
+        time.sleep(0.5)
+        self.get_logger().info(
+            f"{robot_name} gripper {'closed' if closed else 'opened'}"
+        )
+
     def _set_attachment(self, robot_name: str, part_name: str, attach: bool) -> None:
         state = self.part_states[part_name]
         request = SetAttachment.Request()
@@ -476,6 +516,8 @@ class AssemblyFsmNode(Node):
             insertion_depth_m=cfg.insertion_depth_m,
             approach_bias_xy=bias_xy,
         )
+        # Close fingers on the part, then engage the logical attachment.
+        self._set_gripper(robot_name, closed=True)
         self._set_attachment(robot_name, part_name, attach=True)
         self.motion.execute_precision_departure(
             robot_name=robot_name,
@@ -513,6 +555,8 @@ class AssemblyFsmNode(Node):
             )
 
         self._set_attachment(robot_name, part_name, attach=False)
+        # Open fingers to release the part visually, then anchor it in place.
+        self._set_gripper(robot_name, closed=False)
         self._set_part_frame(part_name, target_frame)
         try:
             self.motion.execute_precision_departure(

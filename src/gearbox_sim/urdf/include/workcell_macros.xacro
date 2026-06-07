@@ -194,9 +194,9 @@
         <topic>${trajectory_topic}</topic>
         <joint_name>${prefix}shoulder_pan_joint</joint_name>
         <initial_position>${shoulder_pan_init}</initial_position>
-        <position_p_gain>260.0</position_p_gain>
+        <position_p_gain>200.0</position_p_gain>
         <position_i_gain>2.0</position_i_gain>
-        <position_d_gain>28.0</position_d_gain>
+        <position_d_gain>34.0</position_d_gain>
         <position_i_min>-8.0</position_i_min>
         <position_i_max>8.0</position_i_max>
         <position_cmd_min>-100.0</position_cmd_min>
@@ -204,9 +204,9 @@
 
         <joint_name>${prefix}shoulder_lift_joint</joint_name>
         <initial_position>${shoulder_lift_init}</initial_position>
-        <position_p_gain>420.0</position_p_gain>
+        <position_p_gain>340.0</position_p_gain>
         <position_i_gain>4.0</position_i_gain>
-        <position_d_gain>42.0</position_d_gain>
+        <position_d_gain>52.0</position_d_gain>
         <position_i_min>-10.0</position_i_min>
         <position_i_max>10.0</position_i_max>
         <position_cmd_min>-120.0</position_cmd_min>
@@ -214,9 +214,9 @@
 
         <joint_name>${prefix}elbow_joint</joint_name>
         <initial_position>${elbow_init}</initial_position>
-        <position_p_gain>360.0</position_p_gain>
+        <position_p_gain>290.0</position_p_gain>
         <position_i_gain>3.5</position_i_gain>
-        <position_d_gain>34.0</position_d_gain>
+        <position_d_gain>42.0</position_d_gain>
         <position_i_min>-10.0</position_i_min>
         <position_i_max>10.0</position_i_max>
         <position_cmd_min>-100.0</position_cmd_min>
@@ -224,9 +224,9 @@
 
         <joint_name>${prefix}wrist_1_joint</joint_name>
         <initial_position>${wrist_1_init}</initial_position>
-        <position_p_gain>180.0</position_p_gain>
+        <position_p_gain>140.0</position_p_gain>
         <position_i_gain>1.6</position_i_gain>
-        <position_d_gain>16.0</position_d_gain>
+        <position_d_gain>20.0</position_d_gain>
         <position_i_min>-5.0</position_i_min>
         <position_i_max>5.0</position_i_max>
         <position_cmd_min>-60.0</position_cmd_min>
@@ -234,9 +234,9 @@
 
         <joint_name>${prefix}wrist_2_joint</joint_name>
         <initial_position>${wrist_2_init}</initial_position>
-        <position_p_gain>170.0</position_p_gain>
+        <position_p_gain>135.0</position_p_gain>
         <position_i_gain>1.4</position_i_gain>
-        <position_d_gain>15.0</position_d_gain>
+        <position_d_gain>19.0</position_d_gain>
         <position_i_min>-5.0</position_i_min>
         <position_i_max>5.0</position_i_max>
         <position_cmd_min>-60.0</position_cmd_min>
@@ -244,9 +244,9 @@
 
         <joint_name>${prefix}wrist_3_joint</joint_name>
         <initial_position>${wrist_3_init}</initial_position>
-        <position_p_gain>110.0</position_p_gain>
+        <position_p_gain>90.0</position_p_gain>
         <position_i_gain>0.8</position_i_gain>
-        <position_d_gain>10.0</position_d_gain>
+        <position_d_gain>13.0</position_d_gain>
         <position_i_min>-3.0</position_i_min>
         <position_i_max>3.0</position_i_max>
         <position_cmd_min>-40.0</position_cmd_min>
@@ -282,14 +282,86 @@
       <origin xyz="0 0 0.012" rpy="0 0 1.5708"/>
     </joint>
 
-    <xacro:box_link parent="${prefix}tool_plate_link" name="${prefix}left_finger"
-                    xyz="0 0.032 0.090" rpy="0 0 0" size="${[0.012, 0.012, 0.16]}"
-                    mass="0.08" material_name="steel_light"/>
-    <xacro:box_link parent="${prefix}tool_plate_link" name="${prefix}right_finger"
-                    xyz="0 -0.032 0.090" rpy="0 0 0" size="${[0.012, 0.012, 0.16]}"
-                    mass="0.08" material_name="steel_light"/>
+    <!-- Fingers on prismatic joints so they can visually close on a part.
+         Axis +Y; joint position 0 = open (default gap), positive = closing.
+         The logical attacher still teleports the part to the TCP; the fingers
+         add the visual "grasp" on top. -->
+    <link name="${prefix}left_finger">
+      <inertial>
+        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <mass value="0.08"/>
+        <xacro:box_inertia mass="0.08" x="0.012" y="0.012" z="0.16"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <geometry><box size="0.012 0.012 0.16"/></geometry>
+        <material name="steel_light"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <geometry><box size="0.012 0.012 0.16"/></geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}left_finger_joint" type="prismatic">
+      <parent link="${prefix}tool_plate_link"/>
+      <child link="${prefix}left_finger"/>
+      <origin xyz="0 0.032 0.010" rpy="0 0 0"/>
+      <axis xyz="0 -1 0"/>
+      <limit lower="0.0" upper="0.026" effort="40.0" velocity="0.5"/>
+    </joint>
+
+    <link name="${prefix}right_finger">
+      <inertial>
+        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <mass value="0.08"/>
+        <xacro:box_inertia mass="0.08" x="0.012" y="0.012" z="0.16"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <geometry><box size="0.012 0.012 0.16"/></geometry>
+        <material name="steel_light"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.08" rpy="0 0 0"/>
+        <geometry><box size="0.012 0.012 0.16"/></geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}right_finger_joint" type="prismatic">
+      <parent link="${prefix}tool_plate_link"/>
+      <child link="${prefix}right_finger"/>
+      <origin xyz="0 -0.032 0.010" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="0.0" upper="0.026" effort="40.0" velocity="0.5"/>
+    </joint>
+
     <xacro:fixed_frame parent="${prefix}tool_plate_link" name="${prefix}tcp_frame"
                        xyz="0 0 ${tcp_offset_z}" rpy="3.14159 0 0"/>
+
+    <!-- ── Gripper finger plugins ── -->
+    <gazebo>
+      <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+        <topic>/joint_states</topic>
+        <joint_name>${prefix}left_finger_joint</joint_name>
+        <joint_name>${prefix}right_finger_joint</joint_name>
+      </plugin>
+      <plugin filename="gz-sim-joint-trajectory-controller-system" name="gz::sim::systems::JointTrajectoryController">
+        <topic>/${prefix}gripper/joint_trajectory</topic>
+        <joint_name>${prefix}left_finger_joint</joint_name>
+        <initial_position>0.0</initial_position>
+        <position_p_gain>120.0</position_p_gain>
+        <position_i_gain>1.0</position_i_gain>
+        <position_d_gain>8.0</position_d_gain>
+        <position_cmd_min>-40.0</position_cmd_min>
+        <position_cmd_max>40.0</position_cmd_max>
+        <joint_name>${prefix}right_finger_joint</joint_name>
+        <initial_position>0.0</initial_position>
+        <position_p_gain>120.0</position_p_gain>
+        <position_i_gain>1.0</position_i_gain>
+        <position_d_gain>8.0</position_d_gain>
+        <position_cmd_min>-40.0</position_cmd_min>
+        <position_cmd_max>40.0</position_cmd_max>
+      </plugin>
+    </gazebo>
   </xacro:macro>
 
   <xacro:macro name="screwdriver_tool" params="prefix parent slide_topic joint_state_topic">
