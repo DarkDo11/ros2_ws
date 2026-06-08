@@ -1,1 +1,0 @@
-/home/dark/ros2_ws/build/gearbox_sim/rosidl_typesupport_fastrtps_cpp/gearbox_sim/action/detail/run_screwdriver__rosidl_typesupport_fastrtps_cpp.hpp

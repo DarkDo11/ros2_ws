@@ -28,6 +28,11 @@ class PressController(Node):
         self.declare_parameter("trajectory_topic", "/press/joint_trajectory")
         self.declare_parameter("joint_name", "press_ram_joint")
         self.declare_parameter("ft_topic", "/ur5e_press/ft_sensor")
+        self.declare_parameter("demo_mode", True)
+        self.declare_parameter("require_safety_interlock", False)
+        self.declare_parameter("safety_interlock_closed", True)
+        self.declare_parameter("fixture_ready", True)
+        self.declare_parameter("require_ft_samples", False)
         self.declare_parameter(
             "csv_path",
             str(Path(os.environ.get("ROS_LOG_DIR", "/tmp")) / "press_ft_log.csv"),
@@ -65,6 +70,20 @@ class PressController(Node):
             self._csv_writer.writerow(_CSV_HEADER)
             self._csv_file.flush()
         self.get_logger().info(f"Press FT log: {csv_path}")
+        if self._demo_mode:
+            self.get_logger().warn(
+                "press_controller demo_mode=true: press cycles may report success "
+                "without certified safety input or F/T evidence."
+            )
+        else:
+            self.get_logger().info(
+                "press_controller demo_mode=false: safety interlock, fixture "
+                "ready and F/T samples are required."
+            )
+
+    @property
+    def _demo_mode(self) -> bool:
+        return self.get_parameter("demo_mode").get_parameter_value().bool_value
 
     def _ft_callback(self, msg: Wrench) -> None:
         # list.append is GIL-safe; the lock guards only the start/end
@@ -86,12 +105,34 @@ class PressController(Node):
             )
             msg.points.append(point)
         self.publisher.publish(msg)
+
     def _handle_cycle(self, request, response):
         joint_name = self.get_parameter("joint_name").get_parameter_value().string_value
         self.get_logger().info(
             f"Press cycle: recipe={request.recipe_name} "
             f"target={request.target_frame} stroke={request.stroke_m:.4f}"
         )
+
+        demo_mode = self._demo_mode
+        require_interlock = (
+            (not demo_mode)
+            or self.get_parameter("require_safety_interlock")
+            .get_parameter_value()
+            .bool_value
+        )
+        interlock_closed = (
+            self.get_parameter("safety_interlock_closed").get_parameter_value().bool_value
+        )
+        fixture_ready = (
+            self.get_parameter("fixture_ready").get_parameter_value().bool_value
+        )
+        if require_interlock and (not interlock_closed or not fixture_ready):
+            response.success = False
+            response.message = (
+                "Press cycle blocked: safety interlock is open or fixture is not ready"
+            )
+            self.get_logger().error(response.message)
+            return response
 
         # Open FT capture window before publishing so no samples are missed
         with self._ft_lock:
@@ -131,6 +172,15 @@ class PressController(Node):
         ])
         self._csv_file.flush()
 
+        require_ft_samples = (
+            (not demo_mode)
+            or self.get_parameter("require_ft_samples").get_parameter_value().bool_value
+        )
+        if require_ft_samples and not samples:
+            response.success = False
+            response.message = "Press cycle failed: no F/T samples captured"
+            return response
+
         response.success = True
         response.message = (
             f"Completed press recipe {request.recipe_name}  peak_Fz={peak_fz:.1f} N"
@@ -156,4 +206,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -1,3 +1,10 @@
 build/
 install/
 log/
+.codex
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+*.egg-info/

@@ -1,1 +1,0 @@
-/home/dark/ros2_ws/src/gearbox_sim/launch/assembly_cell.launch.py

@@ -1,6 +1,0 @@
-action/RunScrewdriver.action
-action/RunScrewdriver.idl
-srv/RunPressCycle.idl
-srv/RunPressCycle.srv
-srv/SetAttachment.idl
-srv/SetAttachment.srv

@@ -45,8 +45,14 @@ install(PROGRAMS
   scripts/screwdriver_server.py
   scripts/part_spawner.py
   scripts/ft_monitor.py
+  scripts/vision_status_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_assembly_fsm tests/test_assembly_fsm.py)
+endif()
 
 ament_export_dependencies(rosidl_default_runtime)
 

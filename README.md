@@ -8,6 +8,31 @@ state machine. The old linear implementation is preserved as
 `scripts/assembly_sequence_legacy.py`; `scripts/assembly_state_machine.py` is
 also left in place for compatibility.
 
+### Current implementation scope
+
+The package is a digital dry-run bench for validating the operation order,
+workspace layout, TF frame structure, logical grasping, press cycles and screw
+station sequencing.
+
+Important limits of the current model:
+
+- Part targets are TF-driven, but loose parts are synchronized in Gazebo through
+  a logical attacher and `set_pose` calls rather than real contact grasping.
+- The final product visualization is a prebuilt `assembled_gearbox` model. After
+  the assembly sequence, loose part models are hidden and the finished product is
+  moved to the output tray while `visual_unload_demo:=true`.
+- Camera models and image bridges are present. A perception node that publishes
+  TF-derived demo poses and status gates is included as
+  `vision_status_node.py`; it is a perception surrogate, not image detection.
+- The press controller has demo and strict modes. Strict mode requires interlock,
+  fixture-ready and F/T samples, but no certified safety PLC, light curtain or
+  hardware safety loop is modeled.
+- F/T summaries from `ft_monitor.py` are part of FSM logic. The FSM checks force
+  and torque limits around pick, place, press and screw operations.
+- The screwdriver action simulates the tool slide/spin cycle; the FSM is
+  responsible for moving UR3e to each screw frame before the tool cycle starts.
+  In strict mode the action fails until real torque/seating feedback is added.
+
 ### Dependencies
 
 Check what is already available after sourcing ROS 2:
@@ -76,8 +101,9 @@ Open `http://localhost:5000/` and select `GEARBOX_ASSEMBLY_FSM`. Use the
 browser screenshot tool to capture the graph for the report. The top level is
 kept readable and shows:
 
-`IDLE`, `HOMING`, `PRESS_SUBFSM`, `ASSEMBLY_SUBFSM`, `SCREW_SUBFSM`, `UNLOAD`,
-`ERROR_RECOVERY`, `DONE`, `ABORT`.
+`IDLE`, `HOMING`, `PRESS_SUBFSM`, `ASSEMBLY_SUBFSM`, `SCREW_SUBFSM`,
+`HIDE_PARTS`, `PICK_ASSEMBLED`, `PLACE_AT_OUTPUT`, `ERROR_RECOVERY`, `DONE`,
+`ABORT`.
 
 ### Top-level transition table
 
@@ -87,8 +113,10 @@ kept readable and shows:
 | `HOMING` | Move `ur5e_press`, `ur5e_assembly`, `ur3e_screw` to safe poses | `PRESS_SUBFSM` | `ERROR_RECOVERY` |
 | `PRESS_SUBFSM` | Bearing/ring pressing operations | `ASSEMBLY_SUBFSM` | `ERROR_RECOVERY` |
 | `ASSEMBLY_SUBFSM` | Main assembly station operations | `SCREW_SUBFSM` | `ERROR_RECOVERY` |
-| `SCREW_SUBFSM` | Tighten all configured screw frames | `UNLOAD` | `ERROR_RECOVERY` |
-| `UNLOAD` | Move finished assembly to `assembly.output_frame` | `DONE` | `ERROR_RECOVERY` |
+| `SCREW_SUBFSM` | Move UR3e to all configured screw frames and run the screwdriver action | `HIDE_PARTS` | `ERROR_RECOVERY` |
+| `HIDE_PARTS` | Remove loose visual part models after the logical sequence finishes | `PICK_ASSEMBLED` | `ERROR_RECOVERY` |
+| `PICK_ASSEMBLED` | Reveal and pick the prebuilt `assembled_gearbox` visual model | `PLACE_AT_OUTPUT` | `ERROR_RECOVERY` |
+| `PLACE_AT_OUTPUT` | Place the finished gearbox model at `assembly.output_frame` | `DONE` | `ERROR_RECOVERY` |
 | `ERROR_RECOVERY` | Safe-pose recovery and retry with next XY bias | failed top-level state | `ABORT` |
 | `DONE` | Report successful completion | final `succeeded` | - |
 | `ABORT` | Report unrecoverable failure | final `aborted` | - |
@@ -124,10 +152,60 @@ kept readable and shows:
 | `UPDATE_SMALL_BEARING_AT_ASSEMBLY` | Reparent small bearing to assembly cover frame |
 
 `SCREW_SUBFSM` contains `RUN_SCREW_1` through `RUN_SCREW_4`, generated from
-`assembly.screw_frames` in `config/assembly_cell.yaml`.
+`assembly.screw_frames` in `config/assembly_cell.yaml`. Each screw operation
+first moves the UR3e TCP to the screw frame and then calls the screwdriver
+action server for the slide/spin cycle.
 
 Every motion/action/service operation is a single-attempt state. On failure it
 transitions to the nearest `ERROR_RECOVERY`, which calls `move_to_safe_pose`,
 increments the retry index, applies the next XY bias from
 `(0,0)`, `(0.0025,0)`, `(-0.0025,0)`, `(0,0.0025)`, `(0,-0.0025)`, and then
 returns to the failed operation. After the last bias the FSM aborts.
+
+### Demo and strict modes
+
+The default launch keeps demo behavior enabled so the full dry-run sequence can
+be shown end to end.
+
+`vision_status_node.py` publishes:
+
+- `/vision/part_status` as `std_msgs/String` with JSON fields such as
+  `part_name`, `type_id`, `detected_frame`, `accepted`, `installing`,
+  `teeth_aligned` and `done`.
+- `/vision/part_pose/<part_name>` as `geometry_msgs/PoseStamped`.
+- `vision_<part_name>_pose_frame` TF frames.
+
+The current node uses known fixture/pallet TF frames as a perception surrogate.
+With `assembly_fsm.py -p require_vision_status:=true`, pick transitions require
+a fresh accepted status for the part.
+
+`ft_monitor.py` publishes `/ur5e_press/ft_summary`,
+`/ur5e_assembly/ft_summary` and `/ur3e_screw/ft_summary`. The FSM uses these
+summaries when `ft_logic_enabled:=true`. Set `require_ft_samples:=true` to make
+missing or stale F/T data fail the operation instead of only warning.
+
+`assembly_fsm.py` uses `visual_unload_demo:=true` by default. This means the
+final unload sequence hides loose visual models and carries a prebuilt
+`assembled_gearbox` model. Setting `visual_unload_demo:=false` makes the FSM
+fail if it reaches that demo-only unload sequence, rather than pretending a
+physical merged assembly model exists.
+
+`press_controller.py` uses `demo_mode:=true` by default. To make the press
+service fail when safety or sensor evidence is missing, set:
+
+```bash
+ros2 run gearbox_sim press_controller.py --ros-args \
+  -p demo_mode:=false \
+  -p safety_interlock_closed:=true \
+  -p fixture_ready:=true
+```
+
+`screwdriver_server.py` uses `demo_mode:=true` by default. In that mode success
+means the simulated slide/spin cycle completed; torque and screw seating are not
+verified. With `demo_mode:=false`, goals fail until a real driver feedback path
+is implemented. `simulate_failure:=true` can be used to test FSM recovery:
+
+```bash
+ros2 run gearbox_sim screwdriver_server.py --ros-args \
+  -p simulate_failure:=true
+```

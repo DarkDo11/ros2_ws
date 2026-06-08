@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import subprocess
 import time
+from pathlib import Path
 
+from ament_index_python.packages import PackageNotFoundError, get_package_share_directory
 import rclpy
 from rclpy.node import Node
 
@@ -112,7 +114,14 @@ PARTS = [
     },
 ]
 
-MESH_BASE = "/home/dark/ros2_ws/install/gearbox_sim/share/gearbox_sim/meshes/nema17"
+def _mesh_base() -> str:
+    try:
+        return str(Path(get_package_share_directory("gearbox_sim")) / "meshes" / "nema17")
+    except PackageNotFoundError:
+        return str(Path(__file__).resolve().parents[1] / "meshes" / "nema17")
+
+
+MESH_BASE = _mesh_base()
 CREATE_SERVICE = "/world/assembly_world/create"
 
 # ---------------------------------------------------------------------------

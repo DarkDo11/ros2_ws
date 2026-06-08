@@ -1,1 +1,0 @@
-/home/dark/ros2_ws/build/robotiq_2f_gripper_description/ament_cmake_core/robotiq_2f_gripper_descriptionConfig-version.cmake
