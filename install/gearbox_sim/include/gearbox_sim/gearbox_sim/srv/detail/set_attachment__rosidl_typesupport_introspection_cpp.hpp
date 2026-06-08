@@ -1,1 +1,0 @@
-/home/dark/ros2_ws/build/gearbox_sim/rosidl_typesupport_introspection_cpp/gearbox_sim/srv/detail/set_attachment__rosidl_typesupport_introspection_cpp.hpp

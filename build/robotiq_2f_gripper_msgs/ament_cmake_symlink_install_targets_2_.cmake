@@ -1,1 +1,0 @@
-ament_cmake_symlink_install_targets("TARGET_FILES" "/home/dark/ros2_ws/build/robotiq_2f_gripper_msgs/rosidl_generator_py/robotiq_2f_gripper_msgs/robotiq_2f_gripper_msgs_s__rosidl_typesupport_c.so" "TARGETS" "robotiq_2f_gripper_msgs_s__rosidl_typesupport_c" "DESTINATION" "lib/python3.12/site-packages/robotiq_2f_gripper_msgs")

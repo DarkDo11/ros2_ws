@@ -1,9 +1,0 @@
-string robot_name
-string tool_frame
-string part_name
-string part_frame
-string part_link
-bool attach
----
-bool success
-string message
