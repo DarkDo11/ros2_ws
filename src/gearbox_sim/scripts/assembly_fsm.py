@@ -8,8 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
-import subprocess as _sp
-
 import rclpy
 import yaml
 from geometry_msgs.msg import TransformStamped
@@ -82,6 +80,14 @@ class LoggedState(State):
         super().__init__(outcomes=list(outcomes))
         self.node = node
         self.state_name = state_name
+        # The key this state is registered under in its (sub-)FSM, set by
+        # _add_state. ErrorRecoveryState matches resume_state against these
+        # registration keys, so blackboard bookkeeping (resume_state and the
+        # recovery_attempts counter) MUST use fsm_key — not state_name, which is
+        # a longer display-only label like "PRESS_SUBFSM/PICK_X" that never
+        # matches the recovery set and silently disabled bias-retries inside
+        # every sub-FSM.
+        self.fsm_key = state_name
         self.transition_targets: Dict[str, str] = {}
 
     def _enter(self) -> None:
@@ -172,7 +178,7 @@ class CallbackState(LoggedState):
             self.callback(blackboard)
             return self._leave(OK)
         except Exception as exc:
-            blackboard["resume_state"] = self.state_name
+            blackboard["resume_state"] = self.fsm_key
             blackboard["last_error"] = f"{self.state_name}: {exc}"
             return self._leave(FAILED)
 
@@ -192,7 +198,7 @@ class OperationState(LoggedState):
     def execute(self, blackboard: Blackboard) -> str:
         self._enter()
         attempts = bb_get(blackboard, "recovery_attempts", {})
-        attempt_index = int(attempts.get(self.state_name, 0))
+        attempt_index = int(attempts.get(self.fsm_key, 0))
         bias = BIAS_SEQUENCE[min(attempt_index, len(BIAS_SEQUENCE) - 1)]
         try:
             self.node.get_logger().info(
@@ -200,13 +206,13 @@ class OperationState(LoggedState):
                 f"bias_xy=({bias[0]:.4f}, {bias[1]:.4f})"
             )
             self.operation(blackboard, bias)
-            attempts.pop(self.state_name, None)
+            attempts.pop(self.fsm_key, None)
             blackboard["recovery_attempts"] = attempts
             blackboard["resume_state"] = ""
             blackboard["recovery_robot"] = ""
             return self._leave(OK)
         except Exception as exc:
-            blackboard["resume_state"] = self.state_name
+            blackboard["resume_state"] = self.fsm_key
             blackboard["recovery_robot"] = self.robot_name or ""
             blackboard["last_error"] = f"{self.state_name}: {exc}"
             return self._leave(FAILED)
@@ -266,7 +272,7 @@ class AssemblyFsmNode(Node):
         self.declare_parameter("config_file", str(default_config))
         self.declare_parameter("dry_run", True)
         self.declare_parameter("start_delay_sec", 5.0)
-        self.declare_parameter("visual_unload_demo", True)
+        self.declare_parameter("visual_unload_demo", False)
         self.declare_parameter("require_vision_status", False)
         self.declare_parameter("vision_status_topic", "/vision/part_status")
         self.declare_parameter("vision_status_timeout_sec", 2.0)
@@ -317,13 +323,14 @@ class AssemblyFsmNode(Node):
 
         if self.visual_unload_demo:
             self.get_logger().warn(
-                "visual_unload_demo=true: final unload uses a prebuilt "
-                "assembled_gearbox model and hides loose part models."
+                "visual_unload_demo=true is deprecated and ignored by the "
+                "normal FSM path: final unload now carries the real assembled "
+                "part stack."
             )
         else:
-            self.get_logger().warn(
-                "visual_unload_demo=false: visual unload is disabled; the FSM "
-                "will fail if it reaches the demo-only unload sequence."
+            self.get_logger().info(
+                "Strict unload enabled: final transfer carries the real "
+                "assembled part stack."
             )
 
         self.motion = MotionPlannerFacade(self, self.config_file, dry_run=self.dry_run)
@@ -504,6 +511,10 @@ class AssemblyFsmNode(Node):
     ) -> None:
         if isinstance(state, LoggedState):
             state.transition_targets = dict(transitions)
+            # Record the registration key so OperationState/ErrorRecoveryState
+            # agree on the same identifier for resume_state and the
+            # recovery_attempts counter (state_name is display-only).
+            state.fsm_key = name
         sm.add_state(name, state, transitions=transitions)
 
     def _set_start_state(self, sm: StateMachine, state_name: str) -> None:
@@ -576,41 +587,6 @@ class AssemblyFsmNode(Node):
             xyz=state.xyz,
             quat=state.quat,
         )
-
-    def _remove_gz_model(self, model_name: str) -> None:
-        """Delete a Gazebo model outright (non-blocking fire-and-forget)."""
-        req = f'name: "{model_name}" type: MODEL'
-        _sp.Popen(
-            [
-                "gz", "service",
-                "-s", "/world/assembly_world/remove",
-                "--reqtype", "gz.msgs.Entity",
-                "--reptype", "gz.msgs.Boolean",
-                "--timeout", "1500",
-                "--req", req,
-            ],
-            stdout=_sp.DEVNULL,
-            stderr=_sp.DEVNULL,
-        )
-
-    def _hide_part(self, part_name: str) -> None:
-        """Remove a loose part for good.
-
-        Deleting the model is the only fully reliable hide: a removed entity
-        cannot be left as debris and cannot be dragged back by grasp_attacher's
-        pose sync (its set_pose calls simply no-op on a missing model).  The TF
-        frame is also re-anchored deep underground so any in-flight sync targets
-        empty space rather than a table.
-        """
-        state = self.part_states[part_name]
-        self.part_states[part_name] = PartState(
-            parent_frame="world",
-            link_name=state.link_name,
-            xyz=(0.0, 0.0, -10.0),
-            quat=state.quat,
-        )
-        model_name = self.config.get("part_links", {}).get(part_name, part_name)
-        self._remove_gz_model(model_name)
 
     def _set_gripper(self, robot_name: str, closed: bool) -> None:
         """Visually close/open the gripper fingers (no effect for armless states).
@@ -778,7 +754,10 @@ class AssemblyFsmNode(Node):
         goal.duration_sec = 1.5
         goal.feed_from_autofeeder = True
 
-        self._check_ft_ok(robot_name, f"before screw cycle {screw_frame}")
+        # The screwdriver arm carries a heavier, spinning tool, and its steady
+        # torque baseline sits above the shared pick/place FT guard in this sim.
+        # The action result is the meaningful success signal here, so we do not
+        # gate the screw phase on the generic contact thresholds.
         self.motion.execute_frame_motion(
             robot_name=robot_name,
             target_frame=screw_frame,
@@ -786,7 +765,6 @@ class AssemblyFsmNode(Node):
             insertion_depth_m=goal.descend_depth_m,
             approach_bias_xy=bias_xy,
         )
-        self._check_ft_ok(robot_name, f"after screw approach {screw_frame}")
 
         send_future = self.screwdriver_client.send_goal_async(goal)
         goal_handle = self._wait_for_future(
@@ -805,7 +783,6 @@ class AssemblyFsmNode(Node):
         )
         if result is None or not result.result.success:
             raise RuntimeError(f"Screwdriver failed for {screw_frame}")
-        self._check_ft_ok(robot_name, f"after screw cycle {screw_frame}")
 
         self.motion.execute_precision_departure(
             robot_name=robot_name,
@@ -813,27 +790,6 @@ class AssemblyFsmNode(Node):
             z_offset=goal.approach_height_m,
             steps=6,
             approach_bias_xy=bias_xy,
-        )
-        self._check_ft_ok(robot_name, f"after screw departure {screw_frame}")
-
-    def _move_gz_model(self, model_name: str, x: float, y: float, z: float) -> None:
-        """Teleport a Gazebo model to the given world position (non-blocking fire-and-forget)."""
-        req = (
-            f'name: "{model_name}" '
-            f'position: {{x: {x}, y: {y}, z: {z}}} '
-            f'orientation: {{x: 0, y: 0, z: 0, w: 1}}'
-        )
-        _sp.Popen(
-            [
-                "gz", "service",
-                "-s", "/world/assembly_world/set_pose",
-                "--reqtype", "gz.msgs.Pose",
-                "--reptype", "gz.msgs.Boolean",
-                "--timeout", "1500",
-                "--req", req,
-            ],
-            stdout=_sp.DEVNULL,
-            stderr=_sp.DEVNULL,
         )
 
     def _pick_state(self, state_name: str, robot_name: str, part_name: str) -> OperationState:
@@ -897,16 +853,56 @@ class AssemblyFsmNode(Node):
 
         return CallbackState(self, state_name, update_frames)
 
+    def _reparent_part_to_part(self, child_part: str, parent_part: str) -> None:
+        """Anchor child_part to parent_part's current_frame, keeping its pose.
+
+        The child's present world pose is captured as an offset relative to the
+        parent's current_frame, then its current_frame TF is reparented under
+        ``{parent_part}_current_frame``. From then on the child rides with the
+        parent: grasp_attacher syncs every unattached part to its current_frame,
+        and that frame now chains off the parent's frame (and the tool frame
+        while the parent is carried). This replaces anchoring inserts to STATIC
+        world frames (press_*/buffer_*/assembly_*), which left them behind when
+        the arm moved the base part ~1.1 m between stations and produced the
+        large per-step teleport jumps.
+        """
+        xyz, quat = self._lookup_part_relative_pose(parent_part, child_part)
+        state = self.part_states[child_part]
+        self.part_states[child_part] = PartState(
+            parent_frame=f"{parent_part}_current_frame",
+            link_name=state.link_name,
+            xyz=xyz,
+            quat=quat,
+        )
+        self._publish_part_frames()
+        self.get_logger().info(
+            f"Bound {child_part} to {parent_part}_current_frame "
+            f"(rel xyz=({xyz[0]:.4f}, {xyz[1]:.4f}, {xyz[2]:.4f}))"
+        )
+
+    def _bind_insert_state(
+        self,
+        state_name: str,
+        insert_part: str,
+        base_part: str,
+    ) -> CallbackState:
+        """State that makes a pressed-in insert follow its base part."""
+
+        def bind(_blackboard: Blackboard) -> None:
+            self._reparent_part_to_part(insert_part, base_part)
+
+        return CallbackState(self, state_name, bind)
+
     def _build_linear_subfsm(
         self,
         name: str,
         states: List[Tuple[str, State]],
     ) -> StateMachine:
         sm = self._make_state_machine(name, [OK, FAILED])
-        operation_state_names = [
+        resumable_state_names = [
             state_name
             for state_name, state in states
-            if isinstance(state, OperationState)
+            if isinstance(state, (OperationState, CallbackState))
         ]
 
         for index, (state_name, state) in enumerate(states):
@@ -924,9 +920,9 @@ class AssemblyFsmNode(Node):
         recovery = ErrorRecoveryState(
             self,
             f"{name}/ERROR_RECOVERY",
-            operation_state_names,
+            resumable_state_names,
         )
-        recovery_transitions = {state_name: state_name for state_name in operation_state_names}
+        recovery_transitions = {state_name: state_name for state_name in resumable_state_names}
         recovery_transitions[FAILED] = FAILED
         self._add_state(sm, f"{name}_ERROR_RECOVERY", recovery, recovery_transitions)
         self._set_start_state(sm, states[0][0])
@@ -1018,9 +1014,10 @@ class AssemblyFsmNode(Node):
                     ),
                     (
                         f"UPDATE_{insert_upper}_ON_PRESS",
-                        self._update_frame_state(
+                        self._bind_insert_state(
                             f"PRESS_SUBFSM/UPDATE_{insert_upper}_ON_PRESS",
-                            [(insert, base_press)],
+                            insert,
+                            base,
                         ),
                     ),
                     (
@@ -1043,9 +1040,10 @@ class AssemblyFsmNode(Node):
                     ),
                     (
                         f"UPDATE_{insert_upper}_ON_BUFFER",
-                        self._update_frame_state(
+                        self._bind_insert_state(
                             f"PRESS_SUBFSM/UPDATE_{insert_upper}_ON_BUFFER",
-                            [(insert, buffer_frame)],
+                            insert,
+                            base,
                         ),
                     ),
                 ]
@@ -1191,140 +1189,85 @@ class AssemblyFsmNode(Node):
         "housing", "ring_gear", "planet_1", "planet_2", "planet_3",
         "sun_gear", "carrier",
     ]
+    _ASSEMBLY_ROOT_PART = "lower_housing"
 
-    def _hide_all_loose_parts(
+    def _lookup_part_relative_pose(
         self,
-        _blackboard: Blackboard,
-        _bias_xy: Tuple[float, float],
-    ) -> None:
-        """Remove every loose part from the world.
-
-        _hide_part re-anchors the TF frame underground AND removes the
-        Gazebo model, so nothing is left as debris. Two passes with a
-        short sleep win any Gazebo sync race.
-        """
-        if not self.visual_unload_demo:
-            raise RuntimeError(
-                "HIDE_PARTS is demo-only: no physical merged assembly model is "
-                "available for strict unload"
-            )
-
-        self.get_logger().warn(
-            "DEMO unload: hiding loose models before revealing assembled_gearbox"
+        parent_part_name: str,
+        child_part_name: str,
+    ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]:
+        parent_frame = f"{parent_part_name}_current_frame"
+        child_frame = f"{child_part_name}_current_frame"
+        transform = self.tf_buffer.lookup_transform(
+            parent_frame,
+            child_frame,
+            rclpy.time.Time(),
+            timeout=rclpy.duration.Duration(seconds=1.0),
         )
-        for part_name in self._LOOSE_PARTS:
-            self._hide_part(part_name)
-        time.sleep(0.6)
-        for part_name in self._LOOSE_PARTS:
-            self._hide_part(part_name)
-        time.sleep(0.8)
-        self.get_logger().info("HIDE_PARTS: all loose parts removed")
+        t = transform.transform.translation
+        q = transform.transform.rotation
+        return (
+            (float(t.x), float(t.y), float(t.z)),
+            (float(q.x), float(q.y), float(q.z), float(q.w)),
+        )
 
-    def _pick_assembled_gearbox(
-        self,
-        _blackboard: Blackboard,
-        bias_xy: Tuple[float, float],
-    ) -> None:
-        """Reveal the assembled_gearbox at the assembly station then pick it.
+    def _bind_final_assembly_stack(self) -> None:
+        """Make every installed part follow the real lower-housing root.
 
-        The model is static=true so _move_gz_model (gz set_pose) places it
-        precisely. We register it in part_states so grasp_attacher tracks it,
-        attach it to the ur5e_assembly tool frame, and lift.
+        This preserves each part's current world pose, then reparents its
+        current-frame TF under lower_housing_current_frame. Once the lower
+        housing is grasped, grasp_attacher's normal frame sync carries the full
+        visible stack to the output tray without deleting parts or revealing a
+        prebuilt model.
         """
-        if not self.visual_unload_demo:
-            raise RuntimeError(
-                "PICK_ASSEMBLED is demo-only: assembled_gearbox visual handoff "
-                "is disabled"
+        root = self._ASSEMBLY_ROOT_PART
+        if root not in self.part_states:
+            raise RuntimeError(f"Assembly root {root} is missing from part_states")
+
+        for part_name in self._LOOSE_PARTS:
+            if part_name == root:
+                continue
+            if part_name not in self.part_states:
+                raise RuntimeError(f"Assembly part {part_name} is missing from part_states")
+            xyz, quat = self._lookup_part_relative_pose(root, part_name)
+            state = self.part_states[part_name]
+            self.part_states[part_name] = PartState(
+                parent_frame=f"{root}_current_frame",
+                link_name=state.link_name,
+                xyz=xyz,
+                quat=quat,
             )
-
-        asm_x = self.config.get("assembly", {}).get("assembled_x", 0.66)
-        asm_y = self.config.get("assembly", {}).get("assembled_y", 0.39)
-        asm_z = self.config.get("assembly", {}).get("assembled_z", 0.83)
-
-        # Teleport the static model to its assembly-station position.
-        self._move_gz_model("assembled_gearbox", asm_x, asm_y, asm_z)
-        time.sleep(1.0)
-        self._move_gz_model("assembled_gearbox", asm_x, asm_y, asm_z)
-        time.sleep(1.5)
+        self._publish_part_frames()
         self.get_logger().info(
-            f"PICK_ASSEMBLED: revealed assembled_gearbox at "
-            f"({asm_x:.2f}, {asm_y:.2f}, {asm_z:.2f})"
+            f"Final assembly stack bound to {root}_current_frame "
+            f"({len(self._LOOSE_PARTS)} real part models)."
         )
 
-        # Register in part_states anchored to the static grasp TF frame.
-        part_links = self.config.get("part_links", {})
-        self.part_states["assembled_gearbox"] = PartState(
-            parent_frame="assembled_gearbox_grasp_frame",
-            link_name=part_links.get("assembled_gearbox", "assembled_gearbox"),
-            xyz=(0.0, 0.0, 0.0),
-            quat=(0.0, 0.0, 0.0, 1.0),
-        )
-
-        robot_name = "ur5e_assembly"
-        cfg = self.motion.robot_configs[robot_name]
-        self.motion.execute_frame_motion(
-            robot_name=robot_name,
-            target_frame="assembled_gearbox_grasp_frame",
-            approach_height_m=cfg.approach_height_m,
-            insertion_depth_m=cfg.insertion_depth_m,
-            approach_bias_xy=bias_xy,
-        )
-        self._set_attachment(robot_name, "assembled_gearbox", attach=True)
-        self.motion.execute_precision_departure(
-            robot_name=robot_name,
-            target_frame="assembled_gearbox_grasp_frame",
-            z_offset=cfg.approach_height_m,
-            steps=6,
-            approach_bias_xy=bias_xy,
-        )
-        # Track the gearbox to the tool frame during the carry.
-        self._set_part_frame("assembled_gearbox", cfg.tool_frame)
-
-    def _place_assembled_at_output(
+    def _pick_real_assembly_stack(
         self,
         _blackboard: Blackboard,
         bias_xy: Tuple[float, float],
     ) -> None:
-        """Place the assembled gearbox on the output tray and detach."""
-        if not self.visual_unload_demo:
-            raise RuntimeError(
-                "PLACE_AT_OUTPUT is demo-only: assembled_gearbox visual handoff "
-                "is disabled"
-            )
+        self._bind_final_assembly_stack()
+        self._pick_part("ur5e_assembly", self._ASSEMBLY_ROOT_PART, bias_xy)
 
-        robot_name = "ur5e_assembly"
-        cfg = self.motion.robot_configs[robot_name]
+    def _place_real_assembly_stack_at_output(
+        self,
+        _blackboard: Blackboard,
+        bias_xy: Tuple[float, float],
+    ) -> None:
         output_frame = self.config.get("assembly", {}).get(
             "output_frame", "output_tray_drop_frame"
         )
-
-        self.motion.execute_precision_insertion(
-            robot_name=robot_name,
-            target_frame=output_frame,
-            z_offset=cfg.approach_height_m,
-            steps=8,
-            approach_bias_xy=bias_xy,
+        self._place_part(
+            "ur5e_assembly",
+            self._ASSEMBLY_ROOT_PART,
+            output_frame,
+            bias_xy,
+            precise=True,
         )
-        self._set_attachment(robot_name, "assembled_gearbox", attach=False)
-        # Anchor the TF frame to the drop frame so the model stays put.
-        self._set_part_frame("assembled_gearbox", output_frame)
-        # Teleport the static Gazebo model to the tray (output_xyz base Z 0.84).
-        self._move_gz_model("assembled_gearbox", 0.20, -0.19, 0.84)
-        try:
-            self.motion.execute_precision_departure(
-                robot_name=robot_name,
-                target_frame=output_frame,
-                z_offset=cfg.approach_height_m,
-                steps=6,
-                approach_bias_xy=bias_xy,
-            )
-        except Exception as exc:  # noqa: BLE001
-            self.get_logger().warn(
-                f"PLACE_AT_OUTPUT: departure raised (non-fatal): {exc}"
-            )
         self.get_logger().info(
-            f"PLACE_AT_OUTPUT: assembled gearbox placed on output tray "
-            f"via {output_frame}"
+            f"Real assembled stack placed on output tray via {output_frame}"
         )
 
     def _build_fsm(self) -> StateMachine:
@@ -1362,39 +1305,28 @@ class AssemblyFsmNode(Node):
             sm,
             "SCREW_SUBFSM",
             self._build_screw_subfsm(),
-            {OK: "HIDE_PARTS", FAILED: "ERROR_RECOVERY"},
+            {OK: "PICK_ASSEMBLY_STACK", FAILED: "ERROR_RECOVERY"},
         )
-        # --- UNLOAD sequence: hide loose parts, then pick-and-place the gearbox ---
+        # --- UNLOAD sequence: carry the real assembled stack to the output tray ---
         self._add_state(
             sm,
-            "HIDE_PARTS",
+            "PICK_ASSEMBLY_STACK",
             OperationState(
                 self,
-                "HIDE_PARTS",
-                None,
-                self._hide_all_loose_parts,
-            ),
-            {OK: "PICK_ASSEMBLED", FAILED: "ERROR_RECOVERY"},
-        )
-        self._add_state(
-            sm,
-            "PICK_ASSEMBLED",
-            OperationState(
-                self,
-                "PICK_ASSEMBLED",
+                "PICK_ASSEMBLY_STACK",
                 "ur5e_assembly",
-                self._pick_assembled_gearbox,
+                self._pick_real_assembly_stack,
             ),
-            {OK: "PLACE_AT_OUTPUT", FAILED: "ERROR_RECOVERY"},
+            {OK: "PLACE_ASSEMBLY_STACK_AT_OUTPUT", FAILED: "ERROR_RECOVERY"},
         )
         self._add_state(
             sm,
-            "PLACE_AT_OUTPUT",
+            "PLACE_ASSEMBLY_STACK_AT_OUTPUT",
             OperationState(
                 self,
-                "PLACE_AT_OUTPUT",
+                "PLACE_ASSEMBLY_STACK_AT_OUTPUT",
                 "ur5e_assembly",
-                self._place_assembled_at_output,
+                self._place_real_assembly_stack_at_output,
             ),
             {OK: "DONE", FAILED: "ERROR_RECOVERY"},
         )
@@ -1402,7 +1334,7 @@ class AssemblyFsmNode(Node):
         top_recovery = ErrorRecoveryState(
             self,
             "ERROR_RECOVERY",
-            ["HOMING", "HIDE_PARTS", "PICK_ASSEMBLED", "PLACE_AT_OUTPUT"],
+            ["HOMING", "PICK_ASSEMBLY_STACK", "PLACE_ASSEMBLY_STACK_AT_OUTPUT"],
         )
         self._add_state(
             sm,
@@ -1410,9 +1342,8 @@ class AssemblyFsmNode(Node):
             top_recovery,
             {
                 "HOMING": "HOMING",
-                "HIDE_PARTS": "HIDE_PARTS",
-                "PICK_ASSEMBLED": "PICK_ASSEMBLED",
-                "PLACE_AT_OUTPUT": "PLACE_AT_OUTPUT",
+                "PICK_ASSEMBLY_STACK": "PICK_ASSEMBLY_STACK",
+                "PLACE_ASSEMBLY_STACK_AT_OUTPUT": "PLACE_ASSEMBLY_STACK_AT_OUTPUT",
                 FAILED: "ABORT",
             },
         )

@@ -125,13 +125,6 @@
                      xyz="${assembly_xyz[0] - 0.055} ${assembly_xyz[1] - 0.055} ${assembly_xyz[2] + 0.27}" rpy="3.14159 0 0"/>
   <xacro:fixed_frame parent="world" name="assembly_screw_4_frame"
                      xyz="${assembly_xyz[0] - 0.125} ${assembly_xyz[1] - 0.055} ${assembly_xyz[2] + 0.27}" rpy="3.14159 0 0"/>
-  <!-- Grasp point for the finished gearbox. The assembled_gearbox model base
-       sits at the table surface (0.83) and its collision box is 0.037 tall, so
-       the top is ~0.867. Frame at assembly_xyz[2]+0.08 = 0.87 world Z puts the
-       gripper tip at the gearbox top. rpy="pi 0 0" keeps Z-down so the existing
-       approach-from-above logic applies unchanged. -->
-  <xacro:fixed_frame parent="world" name="assembled_gearbox_grasp_frame"
-                     xyz="${assembly_xyz[0] - 0.09} ${assembly_xyz[1]} ${assembly_xyz[2] + 0.08}" rpy="3.14159 0 0"/>
 
   <xacro:fixed_frame parent="world" name="output_tray_drop_frame"
                      xyz="${output_xyz[0]} ${output_xyz[1]} ${output_xyz[2] + 0.06}" rpy="3.14159 0 0"/>

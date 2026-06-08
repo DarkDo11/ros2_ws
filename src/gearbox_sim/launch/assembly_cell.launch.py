@@ -58,6 +58,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
     run_state_machine = LaunchConfiguration("run_state_machine")
     planner_dry_run = LaunchConfiguration("planner_dry_run")
+    start_yasmin_viewer = LaunchConfiguration("start_yasmin_viewer")
     gz_args = LaunchConfiguration("gz_args")
 
     world_file = os.path.join(pkg_share, "worlds", "assembly_cell.sdf")
@@ -209,10 +210,11 @@ def generate_launch_description():
                 "config_file": config_file,
                 "dry_run": planner_dry_run,
                 "start_delay_sec": 5.0,
-                "visual_unload_demo": True,
+                "visual_unload_demo": False,
                 "require_vision_status": True,
                 "ft_logic_enabled": True,
                 "require_ft_samples": False,
+                "max_contact_force_n": 85.0,
             }
         ],
     )
@@ -234,6 +236,7 @@ def generate_launch_description():
         package="yasmin_viewer",
         executable="yasmin_viewer_node",
         output="screen",
+        condition=IfCondition(start_yasmin_viewer),
         parameters=[{"host": "localhost", "port": 5000}],
     )
 
@@ -242,6 +245,7 @@ def generate_launch_description():
             DeclareLaunchArgument("use_sim_time", default_value="true"),
             DeclareLaunchArgument("run_state_machine", default_value="true"),
             DeclareLaunchArgument("planner_dry_run", default_value="true"),
+            DeclareLaunchArgument("start_yasmin_viewer", default_value="true"),
             DeclareLaunchArgument("gz_headless", default_value="false"),
             DeclareLaunchArgument("gz_gui", default_value="true"),
             DeclareLaunchArgument("gz_verbose", default_value="4"),

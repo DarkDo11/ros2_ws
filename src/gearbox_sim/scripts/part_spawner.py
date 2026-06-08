@@ -124,72 +124,6 @@ def _mesh_base() -> str:
 MESH_BASE = _mesh_base()
 CREATE_SERVICE = "/world/assembly_world/create"
 
-# ---------------------------------------------------------------------------
-# Composite assembled gearbox
-# ---------------------------------------------------------------------------
-# The finished product is built from the three real NEMA17 box meshes stacked
-# along Z into a motor-reducer (see reference photo Untitled 2.JPG): a black
-# anodized base, an aluminium body, a bright machined face, and a steel output
-# shaft.  Each box mesh is 62x62 mm and thin along its local Y axis, so a +90 deg
-# roll about X lays the thin axis vertical and the 62x62 face becomes the
-# horizontal footprint.  Spawned below ground; revealed on the assembly table by
-# assembly_fsm once the cell finishes its work.
-ASSEMBLED_GEARBOX_NAME = "assembled_gearbox"
-_GEARBOX_BOXES = [
-    # name,    mesh,            z_pose,  (r, g, b)
-    ("back",   "Back_box.STL",   0.004, (0.07, 0.07, 0.09)),   # black anodized base
-    ("middle", "Middle_box.STL", 0.014, (0.58, 0.60, 0.63)),   # aluminium body
-    ("front",  "Front_box.STL",  0.025, (0.71, 0.73, 0.76)),   # bright machined face
-]
-_GEARBOX_SHAFT = {"z": 0.048, "r": 0.006, "l": 0.024, "rgb": (0.76, 0.78, 0.81)}
-
-
-def _build_assembled_gearbox_sdf() -> str:
-    visuals = []
-    for name, mesh, z, (r, g, b) in _GEARBOX_BOXES:
-        visuals.append(
-            f'<visual name="{name}">'
-            f'<pose>0 0 {z} 1.5708 0 0</pose>'
-            f'<geometry><mesh><uri>file://{MESH_BASE}/{mesh}</uri>'
-            f'<scale>0.001 0.001 0.001</scale></mesh></geometry>'
-            f'<material><ambient>{r} {g} {b} 1</ambient>'
-            f'<diffuse>{r} {g} {b} 1</diffuse>'
-            f'<specular>0.3 0.3 0.3 1</specular></material>'
-            f'</visual>'
-        )
-    sr, sg, sb = _GEARBOX_SHAFT["rgb"]
-    visuals.append(
-        f'<visual name="shaft">'
-        f'<pose>0 0 {_GEARBOX_SHAFT["z"]} 0 0 0</pose>'
-        f'<geometry><cylinder><radius>{_GEARBOX_SHAFT["r"]}</radius>'
-        f'<length>{_GEARBOX_SHAFT["l"]}</length></cylinder></geometry>'
-        f'<material><ambient>{sr} {sg} {sb} 1</ambient>'
-        f'<diffuse>{sr} {sg} {sb} 1</diffuse>'
-        f'<specular>0.6 0.6 0.6 1</specular></material>'
-        f'</visual>'
-    )
-    return (
-        '<sdf version="1.9">'
-        f'<model name="{ASSEMBLED_GEARBOX_NAME}">'
-        # Static: the finished gearbox is a final visual result positioned only
-        # via set_pose at UNLOAD. A non-static kinematic link integrates any
-        # residual velocity (e.g. from parts teleporting through it during the
-        # hide step) and drifts across the world; static removes it from
-        # dynamics entirely so it stays exactly where set_pose puts it.
-        '<static>true</static>'
-        '<link name="base_link">'
-        '<inertial><mass>0.3</mass>'
-        '<inertia><ixx>0.0005</ixx><ixy>0</ixy><ixz>0</ixz>'
-        '<iyy>0.0005</iyy><iyz>0</iyz><izz>0.0005</izz></inertia></inertial>'
-        f'{"".join(visuals)}'
-        '<collision name="col"><pose>0 0 0.018 0 0 0</pose>'
-        '<geometry><box><size>0.062 0.062 0.037</size></box></geometry></collision>'
-        '</link>'
-        '<pose>0 0 -1 0 0 0</pose>'
-        '</model></sdf>'
-    )
-
-
 def _build_collision(part: dict) -> str:
     if part["collision"] == "box":
         return f"<box><size>{part['col_size']}</size></box>"
@@ -297,44 +231,6 @@ def _spawn_part(node: Node, part: dict) -> bool:
     return _spawn_sdf(node, part["name"], _build_sdf(part))
 
 
-def _model_exists(name: str) -> bool:
-    """Return True if a model with this name is present in the world.
-
-    The /create service returns data:true even when Gazebo rejects the SDF, so
-    callers must verify the entity actually exists rather than trust the reply.
-    """
-    try:
-        result = subprocess.run(
-            ["gz", "model", "-m", name, "-p"],
-            capture_output=True, text=True, timeout=8,
-        )
-    except Exception:
-        return False
-    out = (result.stdout or "") + (result.stderr or "")
-    return ("No model named" not in out) and (f"Name: {name}" in out or "Pose" in out)
-
-
-def _spawn_sdf_verified(node: Node, name: str, sdf: str, retries: int = 4) -> bool:
-    """Spawn an SDF model and confirm the entity was actually created.
-
-    Gazebo can transiently reject a (valid) SDF string when it is busy, while the
-    /create service still reports success, so we re-submit until the model is
-    really present.
-    """
-    for attempt in range(1, retries + 1):
-        _spawn_sdf(node, name, sdf)
-        time.sleep(1.0)
-        if _model_exists(name):
-            node.get_logger().info(f"Verified {name} present (attempt {attempt}).")
-            return True
-        node.get_logger().warn(
-            f"{name} not present after attempt {attempt}/{retries}; retrying."
-        )
-        time.sleep(1.0)
-    node.get_logger().error(f"Failed to create {name} after {retries} attempts.")
-    return False
-
-
 class PartSpawner(Node):
     def __init__(self):
         super().__init__("part_spawner")
@@ -365,15 +261,6 @@ class PartSpawner(Node):
     def spawn_all(self):
         if not self.wait_for_gazebo():
             return
-
-        # Spawn the composite finished gearbox FIRST, while Gazebo is still idle
-        # (its multi-mesh SDF is the one most prone to transient rejection when
-        # the engine is busy).  Verify-and-retry guards against that.  It lives
-        # below ground until assembly_fsm reveals it on the assembly table.
-        _spawn_sdf_verified(
-            self, ASSEMBLED_GEARBOX_NAME, _build_assembled_gearbox_sdf()
-        )
-        time.sleep(1.0)
 
         for part in PARTS:
             _spawn_part(self, part)

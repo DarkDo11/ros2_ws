@@ -88,7 +88,6 @@ part_links:
   planet_3: planet_3
   sun_gear: sun_gear
   carrier: carrier
-  assembled_gearbox: assembled_gearbox
 assembly:
   screw_frames:
     - assembly_screw_1_frame
@@ -97,9 +96,6 @@ assembly:
     - assembly_screw_4_frame
   output_frame: output_tray_drop_frame
   feeder_frame: autofeeder_pick_frame
-  assembled_x: 0.66   # world X of assembly table centre (for assembled_gearbox visual)
-  assembled_y: 0.39   # world Y of assembly table centre
-  assembled_z: 0.83   # world Z of assembly table surface (base of finished gearbox)
 
 services:
   press_service: /press/run_cycle

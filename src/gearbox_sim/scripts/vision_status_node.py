@@ -25,9 +25,9 @@ def _default_config_path() -> str:
 class VisionStatusNode(Node):
     """Minimal perception surrogate for the assembly FSM.
 
-    This node does not run image processing. It turns known fixture/pallet TF
-    frames into perception-shaped outputs: part pose topics, detected TF frames,
-    and a compact JSON status topic that can gate FSM transitions.
+    This node does not run image processing. It turns current part TF frames
+    into perception-shaped outputs: part pose topics, detected TF frames, and a
+    compact JSON status topic that can gate FSM transitions.
     """
 
     def __init__(self) -> None:
@@ -74,22 +74,25 @@ class VisionStatusNode(Node):
         if self.get_parameter("demo_mode").get_parameter_value().bool_value:
             self.get_logger().warn(
                 "vision_status_node demo_mode=true: statuses are generated from "
-                "known TF frames, not image detection."
+                "current part TF frames, not image detection."
             )
 
         self.create_timer(1.0 / publish_rate_hz, self._publish_statuses)
 
     def _publish_statuses(self) -> None:
-        for part_name, source_frame in self.config.get("parts", {}).items():
-            self._publish_part_status(part_name, source_frame)
+        for part_name in self.config.get("parts", {}):
+            self._publish_part_status(part_name)
 
-    def _publish_part_status(self, part_name: str, source_frame: str) -> None:
+    def _publish_part_status(self, part_name: str) -> None:
+        source_frame = f"{part_name}_current_frame"
+        nominal_frame = self.config.get("parts", {}).get(part_name, "")
         detected_frame = f"vision_{part_name}_pose_frame"
         stamp = self.get_clock().now().to_msg()
         status = {
             "part_name": part_name,
             "type_id": part_name,
             "source_frame": source_frame,
+            "nominal_frame": nominal_frame,
             "detected_frame": detected_frame,
             "accepted": False,
             "installing": False,
@@ -109,9 +112,18 @@ class VisionStatusNode(Node):
             self._publish_status(status)
             return
 
+        z = float(transform.transform.translation.z)
+        if z < -1.0:
+            status["message"] = (
+                f"{source_frame} is outside the visible workspace "
+                f"(z={z:.3f}); rejecting"
+            )
+            self._publish_status(status)
+            return
+
         status["accepted"] = True
         status["teeth_aligned"] = True
-        status["message"] = "pose accepted from fixture TF"
+        status["message"] = "pose accepted from current part TF"
 
         detected_tf = TransformStamped()
         detected_tf.header.stamp = stamp

@@ -18,9 +18,10 @@ Important limits of the current model:
 
 - Part targets are TF-driven, but loose parts are synchronized in Gazebo through
   a logical attacher and `set_pose` calls rather than real contact grasping.
-- The final product visualization is a prebuilt `assembled_gearbox` model. After
-  the assembly sequence, loose part models are hidden and the finished product is
-  moved to the output tray while `visual_unload_demo:=true`.
+- The final unload now carries the real assembled stack: the FSM reparents the
+  installed part frames under `lower_housing_current_frame`, grasps the lower
+  housing, and moves the visible stack to the output tray. The old prebuilt
+  visual handoff is no longer part of the normal route.
 - Camera models and image bridges are present. A perception node that publishes
   TF-derived demo poses and status gates is included as
   `vision_status_node.py`; it is a perception surrogate, not image detection.
@@ -102,8 +103,8 @@ browser screenshot tool to capture the graph for the report. The top level is
 kept readable and shows:
 
 `IDLE`, `HOMING`, `PRESS_SUBFSM`, `ASSEMBLY_SUBFSM`, `SCREW_SUBFSM`,
-`HIDE_PARTS`, `PICK_ASSEMBLED`, `PLACE_AT_OUTPUT`, `ERROR_RECOVERY`, `DONE`,
-`ABORT`.
+`PICK_ASSEMBLY_STACK`, `PLACE_ASSEMBLY_STACK_AT_OUTPUT`, `ERROR_RECOVERY`,
+`DONE`, `ABORT`.
 
 ### Top-level transition table
 
@@ -113,10 +114,9 @@ kept readable and shows:
 | `HOMING` | Move `ur5e_press`, `ur5e_assembly`, `ur3e_screw` to safe poses | `PRESS_SUBFSM` | `ERROR_RECOVERY` |
 | `PRESS_SUBFSM` | Bearing/ring pressing operations | `ASSEMBLY_SUBFSM` | `ERROR_RECOVERY` |
 | `ASSEMBLY_SUBFSM` | Main assembly station operations | `SCREW_SUBFSM` | `ERROR_RECOVERY` |
-| `SCREW_SUBFSM` | Move UR3e to all configured screw frames and run the screwdriver action | `HIDE_PARTS` | `ERROR_RECOVERY` |
-| `HIDE_PARTS` | Remove loose visual part models after the logical sequence finishes | `PICK_ASSEMBLED` | `ERROR_RECOVERY` |
-| `PICK_ASSEMBLED` | Reveal and pick the prebuilt `assembled_gearbox` visual model | `PLACE_AT_OUTPUT` | `ERROR_RECOVERY` |
-| `PLACE_AT_OUTPUT` | Place the finished gearbox model at `assembly.output_frame` | `DONE` | `ERROR_RECOVERY` |
+| `SCREW_SUBFSM` | Move UR3e to all configured screw frames and run the screwdriver action | `PICK_ASSEMBLY_STACK` | `ERROR_RECOVERY` |
+| `PICK_ASSEMBLY_STACK` | Bind the installed real parts under `lower_housing_current_frame`, then pick the lower housing | `PLACE_ASSEMBLY_STACK_AT_OUTPUT` | `ERROR_RECOVERY` |
+| `PLACE_ASSEMBLY_STACK_AT_OUTPUT` | Place the real assembled stack at `assembly.output_frame` | `DONE` | `ERROR_RECOVERY` |
 | `ERROR_RECOVERY` | Safe-pose recovery and retry with next XY bias | failed top-level state | `ABORT` |
 | `DONE` | Report successful completion | final `succeeded` | - |
 | `ABORT` | Report unrecoverable failure | final `aborted` | - |
@@ -184,11 +184,10 @@ a fresh accepted status for the part.
 summaries when `ft_logic_enabled:=true`. Set `require_ft_samples:=true` to make
 missing or stale F/T data fail the operation instead of only warning.
 
-`assembly_fsm.py` uses `visual_unload_demo:=true` by default. This means the
-final unload sequence hides loose visual models and carries a prebuilt
-`assembled_gearbox` model. Setting `visual_unload_demo:=false` makes the FSM
-fail if it reaches that demo-only unload sequence, rather than pretending a
-physical merged assembly model exists.
+`assembly_fsm.py` uses `visual_unload_demo:=false` by default. The normal unload
+sequence carries the real stack of part models to the output tray. If
+`visual_unload_demo:=true` is passed, the node logs a deprecation warning; the
+normal FSM path still uses the real stack rather than the prebuilt visual model.
 
 `press_controller.py` uses `demo_mode:=true` by default. To make the press
 service fail when safety or sensor evidence is missing, set:
