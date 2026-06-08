@@ -121,14 +121,25 @@ def generate_launch_description():
         package="gearbox_sim",
         executable="press_controller.py",
         output="screen",
-        parameters=[{"use_sim_time": use_sim_time}],
+        parameters=[
+            {
+                "use_sim_time": use_sim_time,
+                "demo_mode": True,
+            }
+        ],
     )
 
     screwdriver_server = Node(
         package="gearbox_sim",
         executable="screwdriver_server.py",
         output="screen",
-        parameters=[{"use_sim_time": use_sim_time}],
+        parameters=[
+            {
+                "use_sim_time": use_sim_time,
+                "demo_mode": True,
+                "simulate_failure": False,
+            }
+        ],
     )
 
     ft_monitor = Node(
@@ -140,6 +151,20 @@ def generate_launch_description():
                 "use_sim_time": use_sim_time,
                 "force_threshold_n": 5.0,
                 "torque_threshold_nm": 1.0,
+            }
+        ],
+    )
+
+    vision_status = Node(
+        package="gearbox_sim",
+        executable="vision_status_node.py",
+        output="screen",
+        parameters=[
+            {
+                "use_sim_time": use_sim_time,
+                "config_file": config_file,
+                "demo_mode": True,
+                "publish_rate_hz": 2.0,
             }
         ],
     )
@@ -182,6 +207,10 @@ def generate_launch_description():
                 "config_file": config_file,
                 "dry_run": planner_dry_run,
                 "start_delay_sec": 5.0,
+                "visual_unload_demo": True,
+                "require_vision_status": True,
+                "ft_logic_enabled": True,
+                "require_ft_samples": False,
             }
         ],
     )
@@ -236,8 +265,9 @@ def generate_launch_description():
                             screwdriver_server,
                             grasp_attacher,
                             motion_planner,
-                            state_machine,
+                            vision_status,
                             ft_monitor,
+                            state_machine,
                             camera_press,
                             camera_transfer,
                             camera_assembly,

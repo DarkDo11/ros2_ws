@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import threading
 import time
 from dataclasses import dataclass
@@ -14,6 +15,7 @@ import yaml
 from geometry_msgs.msg import TransformStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from std_msgs.msg import Float64MultiArray, String
 from tf2_ros import Buffer, TransformBroadcaster, TransformListener
 
 try:
@@ -59,6 +61,13 @@ class PartState:
     link_name: str
     xyz: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     quat: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 1.0)
+
+
+@dataclass
+class FtState:
+    force_mag_n: float
+    torque_mag_nm: float
+    stamp_monotonic: float
 
 
 class LoggedState(State):
@@ -255,6 +264,15 @@ class AssemblyFsmNode(Node):
         self.declare_parameter("config_file", str(default_config))
         self.declare_parameter("dry_run", True)
         self.declare_parameter("start_delay_sec", 5.0)
+        self.declare_parameter("visual_unload_demo", True)
+        self.declare_parameter("require_vision_status", False)
+        self.declare_parameter("vision_status_topic", "/vision/part_status")
+        self.declare_parameter("vision_status_timeout_sec", 2.0)
+        self.declare_parameter("ft_logic_enabled", True)
+        self.declare_parameter("require_ft_samples", False)
+        self.declare_parameter("ft_status_timeout_sec", 2.0)
+        self.declare_parameter("max_contact_force_n", 40.0)
+        self.declare_parameter("max_contact_torque_nm", 6.0)
 
         self.config_file = (
             self.get_parameter("config_file").get_parameter_value().string_value
@@ -263,9 +281,48 @@ class AssemblyFsmNode(Node):
         self.start_delay_sec = (
             self.get_parameter("start_delay_sec").get_parameter_value().double_value
         )
+        self.visual_unload_demo = (
+            self.get_parameter("visual_unload_demo").get_parameter_value().bool_value
+        )
+        self.require_vision_status = (
+            self.get_parameter("require_vision_status").get_parameter_value().bool_value
+        )
+        self.vision_status_timeout_sec = (
+            self.get_parameter("vision_status_timeout_sec")
+            .get_parameter_value()
+            .double_value
+        )
+        self.ft_logic_enabled = (
+            self.get_parameter("ft_logic_enabled").get_parameter_value().bool_value
+        )
+        self.require_ft_samples = (
+            self.get_parameter("require_ft_samples").get_parameter_value().bool_value
+        )
+        self.ft_status_timeout_sec = (
+            self.get_parameter("ft_status_timeout_sec").get_parameter_value().double_value
+        )
+        self.max_contact_force_n = (
+            self.get_parameter("max_contact_force_n").get_parameter_value().double_value
+        )
+        self.max_contact_torque_nm = (
+            self.get_parameter("max_contact_torque_nm")
+            .get_parameter_value()
+            .double_value
+        )
 
         with Path(self.config_file).open("r", encoding="utf-8") as stream:
             self.config = yaml.safe_load(stream)
+
+        if self.visual_unload_demo:
+            self.get_logger().warn(
+                "visual_unload_demo=true: final unload uses a prebuilt "
+                "assembled_gearbox model and hides loose part models."
+            )
+        else:
+            self.get_logger().warn(
+                "visual_unload_demo=false: visual unload is disabled; the FSM "
+                "will fail if it reaches the demo-only unload sequence."
+            )
 
         self.motion = MotionPlannerFacade(self, self.config_file, dry_run=self.dry_run)
         self.press_client = self.create_client(
@@ -281,6 +338,22 @@ class AssemblyFsmNode(Node):
             RunScrewdriver,
             self.config["services"]["screwdriver_action"],
         )
+        self.vision_statuses: Dict[str, Tuple[float, Dict[str, object]]] = {}
+        self.ft_states: Dict[str, FtState] = {}
+        self._missing_ft_warned: set = set()
+        self.create_subscription(
+            String,
+            self.get_parameter("vision_status_topic").get_parameter_value().string_value,
+            self._vision_status_cb,
+            20,
+        )
+        for robot_name in self.config.get("robots", {}):
+            self.create_subscription(
+                Float64MultiArray,
+                f"/{robot_name}/ft_summary",
+                self._make_ft_summary_cb(robot_name),
+                20,
+            )
 
         self.tf_broadcaster = TransformBroadcaster(self)
         self.tf_buffer = Buffer()
@@ -302,6 +375,95 @@ class AssemblyFsmNode(Node):
 
         self._started = False
         self.create_timer(0.1, self._start_once)
+
+    def _vision_status_cb(self, msg: String) -> None:
+        try:
+            status = json.loads(msg.data)
+        except json.JSONDecodeError as exc:
+            self.get_logger().warn(f"Invalid vision status JSON: {exc}")
+            return
+        part_name = status.get("part_name")
+        if not isinstance(part_name, str) or not part_name:
+            self.get_logger().warn("Vision status missing part_name")
+            return
+        self.vision_statuses[part_name] = (time.monotonic(), status)
+
+    def _make_ft_summary_cb(self, robot_name: str):
+        def _cb(msg: Float64MultiArray) -> None:
+            if len(msg.data) < 8:
+                self.get_logger().warn(
+                    f"{robot_name}: invalid ft_summary length={len(msg.data)}"
+                )
+                return
+            self.ft_states[robot_name] = FtState(
+                force_mag_n=float(msg.data[3]),
+                torque_mag_nm=float(msg.data[7]),
+                stamp_monotonic=time.monotonic(),
+            )
+
+        return _cb
+
+    def _ensure_vision_ready(self, part_name: str, operation: str) -> None:
+        if not self.require_vision_status:
+            return
+
+        entry = self.vision_statuses.get(part_name)
+        if entry is None:
+            raise RuntimeError(
+                f"{operation}: no vision status received for {part_name}"
+            )
+
+        stamp_monotonic, status = entry
+        age = time.monotonic() - stamp_monotonic
+        if age > self.vision_status_timeout_sec:
+            raise RuntimeError(
+                f"{operation}: stale vision status for {part_name}, age={age:.2f}s"
+            )
+        if not bool(status.get("accepted", False)):
+            raise RuntimeError(
+                f"{operation}: vision rejected {part_name}: "
+                f"{status.get('message', 'no reason')}"
+            )
+
+        self.get_logger().info(
+            f"{operation}: vision accepted {part_name} "
+            f"at {status.get('detected_frame', '<unknown>')}"
+        )
+
+    def _check_ft_ok(self, robot_name: Optional[str], operation: str) -> None:
+        if not self.ft_logic_enabled or not robot_name:
+            return
+
+        state = self.ft_states.get(robot_name)
+        if state is None:
+            if self.require_ft_samples:
+                raise RuntimeError(f"{operation}: no F/T summary for {robot_name}")
+            if robot_name not in self._missing_ft_warned:
+                self.get_logger().warn(
+                    f"{operation}: no F/T summary for {robot_name}; "
+                    "continuing because require_ft_samples=false"
+                )
+                self._missing_ft_warned.add(robot_name)
+            return
+
+        age = time.monotonic() - state.stamp_monotonic
+        if age > self.ft_status_timeout_sec:
+            if self.require_ft_samples:
+                raise RuntimeError(
+                    f"{operation}: stale F/T summary for {robot_name}, age={age:.2f}s"
+                )
+            return
+
+        if state.force_mag_n > self.max_contact_force_n:
+            raise RuntimeError(
+                f"{operation}: F/T force limit exceeded for {robot_name}: "
+                f"{state.force_mag_n:.2f} N > {self.max_contact_force_n:.2f} N"
+            )
+        if state.torque_mag_nm > self.max_contact_torque_nm:
+            raise RuntimeError(
+                f"{operation}: F/T torque limit exceeded for {robot_name}: "
+                f"{state.torque_mag_nm:.2f} Nm > {self.max_contact_torque_nm:.2f} Nm"
+            )
 
     def _make_state_machine(
         self,
@@ -469,6 +631,8 @@ class AssemblyFsmNode(Node):
     ) -> None:
         source_frame = f"{part_name}_current_frame"
         cfg = self.motion.robot_configs[robot_name]
+        self._ensure_vision_ready(part_name, f"pick {part_name}")
+        self._check_ft_ok(robot_name, f"before picking {part_name}")
         self.motion.execute_frame_motion(
             robot_name=robot_name,
             target_frame=source_frame,
@@ -476,6 +640,7 @@ class AssemblyFsmNode(Node):
             insertion_depth_m=cfg.insertion_depth_m,
             approach_bias_xy=bias_xy,
         )
+        self._check_ft_ok(robot_name, f"after approach to {part_name}")
         self._set_attachment(robot_name, part_name, attach=True)
         self.motion.execute_precision_departure(
             robot_name=robot_name,
@@ -484,6 +649,7 @@ class AssemblyFsmNode(Node):
             steps=6,
             approach_bias_xy=bias_xy,
         )
+        self._check_ft_ok(robot_name, f"after picking {part_name}")
         self._set_part_frame(part_name, cfg.tool_frame)
 
     def _place_part(
@@ -495,6 +661,7 @@ class AssemblyFsmNode(Node):
         precise: bool = False,
     ) -> None:
         cfg = self.motion.robot_configs[robot_name]
+        self._check_ft_ok(robot_name, f"before placing {part_name}")
         if precise:
             self.motion.execute_precision_insertion(
                 robot_name=robot_name,
@@ -512,6 +679,7 @@ class AssemblyFsmNode(Node):
                 approach_bias_xy=bias_xy,
             )
 
+        self._check_ft_ok(robot_name, f"after placing {part_name}")
         self._set_attachment(robot_name, part_name, attach=False)
         self._set_part_frame(part_name, target_frame)
         try:
@@ -521,6 +689,7 @@ class AssemblyFsmNode(Node):
                 z_offset=cfg.approach_height_m,
                 steps=6,
             )
+            self._check_ft_ok(robot_name, f"after departing {part_name}")
         except Exception as exc:
             self.get_logger().warn(
                 f"{robot_name}: departure after placing {part_name} failed: {exc}"
@@ -535,6 +704,7 @@ class AssemblyFsmNode(Node):
         request.stroke_m = 0.035
         request.dwell_sec = 0.8
 
+        self._check_ft_ok("ur5e_press", f"before press cycle {recipe_name}")
         if not self.press_client.wait_for_service(timeout_sec=5.0):
             raise RuntimeError("Press service is unavailable")
         future = self.press_client.call_async(request)
@@ -545,11 +715,17 @@ class AssemblyFsmNode(Node):
         )
         if response is None or not response.success:
             raise RuntimeError("Press cycle failed")
+        self._check_ft_ok("ur5e_press", f"after press cycle {recipe_name}")
 
-    def _run_screw(self, screw_frame: str) -> None:
+    def _run_screw(
+        self,
+        screw_frame: str,
+        bias_xy: Tuple[float, float] = (0.0, 0.0),
+    ) -> None:
         if not self.screwdriver_client.wait_for_server(timeout_sec=5.0):
             raise RuntimeError("Screwdriver action server is unavailable")
 
+        robot_name = "ur3e_screw"
         goal = RunScrewdriver.Goal()
         goal.screw_frame = screw_frame
         goal.approach_height_m = 0.04
@@ -557,6 +733,16 @@ class AssemblyFsmNode(Node):
         goal.spin_rps = 6.0
         goal.duration_sec = 1.5
         goal.feed_from_autofeeder = True
+
+        self._check_ft_ok(robot_name, f"before screw cycle {screw_frame}")
+        self.motion.execute_frame_motion(
+            robot_name=robot_name,
+            target_frame=screw_frame,
+            approach_height_m=goal.approach_height_m,
+            insertion_depth_m=goal.descend_depth_m,
+            approach_bias_xy=bias_xy,
+        )
+        self._check_ft_ok(robot_name, f"after screw approach {screw_frame}")
 
         send_future = self.screwdriver_client.send_goal_async(goal)
         goal_handle = self._wait_for_future(
@@ -575,6 +761,16 @@ class AssemblyFsmNode(Node):
         )
         if result is None or not result.result.success:
             raise RuntimeError(f"Screwdriver failed for {screw_frame}")
+        self._check_ft_ok(robot_name, f"after screw cycle {screw_frame}")
+
+        self.motion.execute_precision_departure(
+            robot_name=robot_name,
+            target_frame=screw_frame,
+            z_offset=goal.approach_height_m,
+            steps=6,
+            approach_bias_xy=bias_xy,
+        )
+        self._check_ft_ok(robot_name, f"after screw departure {screw_frame}")
 
     def _move_gz_model(self, model_name: str, x: float, y: float, z: float) -> None:
         """Teleport a Gazebo model to the given world position (non-blocking fire-and-forget)."""
@@ -643,7 +839,7 @@ class AssemblyFsmNode(Node):
             self,
             state_name,
             "ur3e_screw",
-            lambda _bb, _bias: self._run_screw(screw_frame),
+            lambda _bb, bias: self._run_screw(screw_frame, bias),
         )
 
     def _update_frame_state(
@@ -963,6 +1159,15 @@ class AssemblyFsmNode(Node):
         Gazebo model, so nothing is left as debris. Two passes with a
         short sleep win any Gazebo sync race.
         """
+        if not self.visual_unload_demo:
+            raise RuntimeError(
+                "HIDE_PARTS is demo-only: no physical merged assembly model is "
+                "available for strict unload"
+            )
+
+        self.get_logger().warn(
+            "DEMO unload: hiding loose models before revealing assembled_gearbox"
+        )
         for part_name in self._LOOSE_PARTS:
             self._hide_part(part_name)
         time.sleep(0.6)
@@ -970,6 +1175,7 @@ class AssemblyFsmNode(Node):
             self._hide_part(part_name)
         time.sleep(0.8)
         self.get_logger().info("HIDE_PARTS: all loose parts removed")
+
     def _pick_assembled_gearbox(
         self,
         _blackboard: Blackboard,
@@ -981,6 +1187,12 @@ class AssemblyFsmNode(Node):
         precisely. We register it in part_states so grasp_attacher tracks it,
         attach it to the ur5e_assembly tool frame, and lift.
         """
+        if not self.visual_unload_demo:
+            raise RuntimeError(
+                "PICK_ASSEMBLED is demo-only: assembled_gearbox visual handoff "
+                "is disabled"
+            )
+
         asm_x = self.config.get("assembly", {}).get("assembled_x", 0.66)
         asm_y = self.config.get("assembly", {}).get("assembled_y", 0.39)
         asm_z = self.config.get("assembly", {}).get("assembled_z", 0.83)
@@ -1023,12 +1235,19 @@ class AssemblyFsmNode(Node):
         )
         # Track the gearbox to the tool frame during the carry.
         self._set_part_frame("assembled_gearbox", cfg.tool_frame)
+
     def _place_assembled_at_output(
         self,
         _blackboard: Blackboard,
         bias_xy: Tuple[float, float],
     ) -> None:
         """Place the assembled gearbox on the output tray and detach."""
+        if not self.visual_unload_demo:
+            raise RuntimeError(
+                "PLACE_AT_OUTPUT is demo-only: assembled_gearbox visual handoff "
+                "is disabled"
+            )
+
         robot_name = "ur5e_assembly"
         cfg = self.motion.robot_configs[robot_name]
         output_frame = self.config.get("assembly", {}).get(
@@ -1063,8 +1282,6 @@ class AssemblyFsmNode(Node):
             f"PLACE_AT_OUTPUT: assembled gearbox placed on output tray "
             f"via {output_frame}"
         )
-
-
 
     def _build_fsm(self) -> StateMachine:
         sm = self._make_state_machine(

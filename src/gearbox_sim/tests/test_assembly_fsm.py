@@ -4,6 +4,7 @@
 import sys
 import types
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 # ---------------------------------------------------------------------------
@@ -31,6 +32,7 @@ _make_stub_module("rclpy.callback_groups")
 for m in ["geometry_msgs", "geometry_msgs.msg",
           "tf2_ros", "tf2_geometry_msgs",
           "sensor_msgs", "sensor_msgs.msg",
+          "std_msgs", "std_msgs.msg",
           "trajectory_msgs", "trajectory_msgs.msg",
           "action_msgs", "action_msgs.msg"]:
     _make_stub_module(m)
@@ -39,7 +41,12 @@ geometry_msg_mod = sys.modules["geometry_msgs.msg"]
 geometry_msg_mod.TransformStamped = MagicMock
 geometry_msg_mod.Transform = MagicMock
 geometry_msg_mod.Quaternion = MagicMock
+sys.modules["tf2_ros"].Buffer = MagicMock
 sys.modules["tf2_ros"].TransformBroadcaster = MagicMock
+sys.modules["tf2_ros"].TransformListener = MagicMock
+std_msg_mod = sys.modules["std_msgs.msg"]
+std_msg_mod.Float64MultiArray = MagicMock
+std_msg_mod.String = MagicMock
 
 # gearbox_sim actions / services
 for m in ["gearbox_sim", "gearbox_sim.action", "gearbox_sim.srv"]:
@@ -72,13 +79,13 @@ yasmin_ros_mod.set_ros_loggers = MagicMock
 yasmin_viewer_mod = _make_stub_module("yasmin_viewer")
 yasmin_viewer_mod.YasminViewerPub = MagicMock
 
-# yaml
-import yaml as _yaml  # real yaml is fine
+yaml_mod = _make_stub_module("yaml")
+yaml_mod.safe_load = MagicMock(return_value={})
 
 # ---------------------------------------------------------------------------
 # Now we can safely import the module under test
 # ---------------------------------------------------------------------------
-sys.path.insert(0, "/home/dark/ros2_ws/src/gearbox_sim/scripts")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import assembly_fsm as fsm
 
 # ---------------------------------------------------------------------------
@@ -310,6 +317,86 @@ class TestCallbackState(unittest.TestCase):
         state = fsm.CallbackState(node, "TEST_STATE", callback)
         result = state.execute(_bb())
         self.assertEqual(result, fsm.FAILED)
+
+
+class TestDemoUnloadGuards(unittest.TestCase):
+
+    def test_hide_parts_fails_when_visual_unload_demo_disabled(self):
+        node = _make_node()
+        node.visual_unload_demo = False
+        with self.assertRaisesRegex(RuntimeError, "demo-only"):
+            fsm.AssemblyFsmNode._hide_all_loose_parts(node, _bb(), (0.0, 0.0))
+
+    def test_pick_assembled_fails_when_visual_unload_demo_disabled(self):
+        node = _make_node()
+        node.visual_unload_demo = False
+        with self.assertRaisesRegex(RuntimeError, "demo-only"):
+            fsm.AssemblyFsmNode._pick_assembled_gearbox(node, _bb(), (0.0, 0.0))
+
+    def test_place_assembled_fails_when_visual_unload_demo_disabled(self):
+        node = _make_node()
+        node.visual_unload_demo = False
+        with self.assertRaisesRegex(RuntimeError, "demo-only"):
+            fsm.AssemblyFsmNode._place_assembled_at_output(node, _bb(), (0.0, 0.0))
+
+
+class TestVisionAndFtGuards(unittest.TestCase):
+
+    def test_vision_guard_accepts_fresh_status(self):
+        node = _make_node()
+        node.require_vision_status = True
+        node.vision_status_timeout_sec = 10.0
+        node.vision_statuses = {
+            "sun_gear": (
+                fsm.time.monotonic(),
+                {
+                    "part_name": "sun_gear",
+                    "accepted": True,
+                    "detected_frame": "vision_sun_gear_pose_frame",
+                },
+            )
+        }
+        fsm.AssemblyFsmNode._ensure_vision_ready(node, "sun_gear", "pick sun_gear")
+
+    def test_vision_guard_rejects_missing_status(self):
+        node = _make_node()
+        node.require_vision_status = True
+        node.vision_statuses = {}
+        with self.assertRaisesRegex(RuntimeError, "no vision status"):
+            fsm.AssemblyFsmNode._ensure_vision_ready(node, "sun_gear", "pick sun_gear")
+
+    def test_ft_guard_rejects_force_limit(self):
+        node = _make_node()
+        node.ft_logic_enabled = True
+        node.require_ft_samples = False
+        node.max_contact_force_n = 40.0
+        node.max_contact_torque_nm = 6.0
+        node.ft_status_timeout_sec = 10.0
+        node.ft_states = {
+            "ur5e_assembly": fsm.FtState(
+                force_mag_n=41.0,
+                torque_mag_nm=1.0,
+                stamp_monotonic=fsm.time.monotonic(),
+            )
+        }
+        with self.assertRaisesRegex(RuntimeError, "force limit"):
+            fsm.AssemblyFsmNode._check_ft_ok(
+                node,
+                "ur5e_assembly",
+                "after placing sun_gear",
+            )
+
+    def test_ft_guard_allows_missing_samples_in_demo_mode(self):
+        node = _make_node()
+        node.ft_logic_enabled = True
+        node.require_ft_samples = False
+        node.ft_states = {}
+        node._missing_ft_warned = set()
+        fsm.AssemblyFsmNode._check_ft_ok(
+            node,
+            "ur5e_assembly",
+            "before placing sun_gear",
+        )
 
 
 if __name__ == "__main__":
