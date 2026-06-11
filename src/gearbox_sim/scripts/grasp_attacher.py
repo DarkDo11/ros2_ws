@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import subprocess
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Set
@@ -63,6 +64,7 @@ class GraspAttacher(Node):
         self.attachments: Dict[str, AttachmentState] = {}
         # parts currently being moved (deduplicate in-flight gz calls)
         self._in_flight: Set[str] = set()
+        self._thread_pool = ThreadPoolExecutor(max_workers=4)
 
         self.service = self.create_service(
             SetAttachment,
@@ -105,7 +107,7 @@ class GraspAttacher(Node):
     def _move_model(self, model_name: str, x: float, y: float, z: float,
                     qx: float = 0.0, qy: float = 0.0,
                     qz: float = 0.0, qw: float = 1.0) -> None:
-        """Spawn a background thread to move model_name; skips if already in-flight."""
+        """Submit a task to move model_name; skips if already in-flight."""
         if model_name in self._in_flight:
             return
         self._in_flight.add(model_name)
@@ -116,7 +118,7 @@ class GraspAttacher(Node):
             finally:
                 self._in_flight.discard(model_name)
 
-        threading.Thread(target=_run, daemon=True).start()
+        self._thread_pool.submit(_run)
 
     def _sync_attached_entities(self):
         """Continuously move attached parts to follow the robot TCP (20 Hz)."""

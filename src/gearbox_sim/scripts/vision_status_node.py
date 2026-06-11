@@ -144,7 +144,7 @@ class VisionStatusNode(Node):
 
     def _publish_status(self, status: Dict[str, object]) -> None:
         status["stamp_sec"] = (
-            float(self.get_clock().now().nanoseconds) * 1e-9
+            self.get_clock().now().nanoseconds / 1_000_000_000
         )
         msg = String()
         msg.data = json.dumps(status, sort_keys=True)

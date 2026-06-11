@@ -157,7 +157,7 @@ class HomingState(LoggedState):
             blackboard["recovery_robot"] = ""
             return self._leave(OK)
         except Exception as exc:
-            blackboard["resume_state"] = self.state_name
+            blackboard["resume_state"] = self.fsm_key
             blackboard["last_error"] = f"{self.state_name}: {exc}"
             return self._leave(FAILED)
 
@@ -377,7 +377,7 @@ class AssemblyFsmNode(Node):
 
         self.tf_broadcaster = TransformBroadcaster(self)
         self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.tf_listener = TransformListener(self.tf_buffer, self, spin_thread=True)
         self.part_states: Dict[str, PartState] = {}
         part_links = self.config.get("part_links", {})
         for part_name, source_frame in self.config["parts"].items():

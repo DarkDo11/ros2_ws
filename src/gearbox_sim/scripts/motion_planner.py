@@ -127,11 +127,14 @@ class MotionPlannerFacade:
         else:
             combined = JointState()
             combined.header = msg.header
-            existing = dict(zip(self._latest_joint_state.name, zip(
-                self._latest_joint_state.position,
-                self._latest_joint_state.velocity,
-                self._latest_joint_state.effort,
-            )))
+            # Build existing map; handle velocity/effort being shorter than position
+            existing = {}
+            prev = self._latest_joint_state
+            for i, name in enumerate(prev.name):
+                pos = prev.position[i] if i < len(prev.position) else 0.0
+                vel = prev.velocity[i] if i < len(prev.velocity) else 0.0
+                eff = prev.effort[i] if i < len(prev.effort) else 0.0
+                existing[name] = (pos, vel, eff)
             for i, name in enumerate(msg.name):
                 pos = msg.position[i] if i < len(msg.position) else 0.0
                 vel = msg.velocity[i] if i < len(msg.velocity) else 0.0

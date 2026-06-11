@@ -41,8 +41,6 @@ class JointPrinter(Node):
         joints = [self.current_joint_positions[name] for name in UR5E_JOINT_NAMES]
         print("[" + ", ".join(f"{value:.6f}" for value in joints) + "]", flush=True)
         self.done = True
-        if rclpy.ok():
-            rclpy.shutdown()
 
 
 def main(args=None):
@@ -50,12 +48,12 @@ def main(args=None):
     node = JointPrinter()
 
     try:
-        rclpy.spin(node)
+        while rclpy.ok() and not node.done:
+            rclpy.spin_once(node, timeout_sec=0.1)
     except KeyboardInterrupt:
         pass
     finally:
-        if not node.done:
-            node.destroy_node()
+        node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 

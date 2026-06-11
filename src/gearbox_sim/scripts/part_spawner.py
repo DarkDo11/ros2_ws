@@ -30,7 +30,7 @@ PARTS = [
         "collision": "box",
         "col_size": "0.050 0.050 0.030",
         "r": 0.22, "g": 0.24, "b": 0.28,
-        "x": -1.26, "y": -0.24, "z": 0.915,
+        "x": -1.26, "y": -0.24, "z": 0.96,
     },
     {
         "name": "main_bearing",
@@ -38,7 +38,7 @@ PARTS = [
         "collision": "cylinder",
         "col_radius": 0.020, "col_length": 0.014,
         "r": 0.78, "g": 0.80, "b": 0.82,
-        "x": -1.26, "y": -0.30, "z": 0.907,
+        "x": -1.26, "y": -0.30, "z": 0.97,
     },
     {
         "name": "cover",
@@ -46,7 +46,7 @@ PARTS = [
         "collision": "box",
         "col_size": "0.048 0.048 0.022",
         "r": 0.22, "g": 0.24, "b": 0.28,
-        "x": -1.02, "y": -0.24, "z": 0.911,
+        "x": -1.02, "y": -0.24, "z": 0.96,
     },
     {
         "name": "small_bearing",
@@ -54,7 +54,7 @@ PARTS = [
         "collision": "cylinder",
         "col_radius": 0.015, "col_length": 0.010,
         "r": 0.78, "g": 0.80, "b": 0.82,
-        "x": -1.02, "y": -0.30, "z": 0.905,
+        "x": -1.02, "y": -0.30, "z": 0.97,
     },
     {
         "name": "housing",
@@ -62,7 +62,7 @@ PARTS = [
         "collision": "box",
         "col_size": "0.056 0.056 0.040",
         "r": 0.22, "g": 0.24, "b": 0.28,
-        "x": -0.78, "y": -0.24, "z": 0.920,
+        "x": -0.78, "y": -0.24, "z": 0.96,
     },
     {
         "name": "ring_gear",
@@ -70,7 +70,7 @@ PARTS = [
         "collision": "cylinder",
         "col_radius": 0.021, "col_length": 0.010,
         "r": 0.10, "g": 0.23, "b": 0.75,
-        "x": -0.78, "y": -0.30, "z": 0.905,
+        "x": -0.78, "y": -0.30, "z": 0.97,
     },
     {
         "name": "planet_1",
@@ -78,7 +78,7 @@ PARTS = [
         "collision": "cylinder",
         "col_radius": 0.008, "col_length": 0.010,
         "r": 0.84, "g": 0.67, "b": 0.18,
-        "x": -0.16, "y": -0.10, "z": 0.905,
+        "x": -0.16, "y": -0.10, "z": 0.95,
     },
     {
         "name": "planet_2",
@@ -86,7 +86,7 @@ PARTS = [
         "collision": "cylinder",
         "col_radius": 0.008, "col_length": 0.010,
         "r": 0.84, "g": 0.67, "b": 0.18,
-        "x": -0.16, "y": -0.15, "z": 0.905,
+        "x": -0.16, "y": -0.15, "z": 0.95,
     },
     {
         "name": "planet_3",
@@ -94,7 +94,7 @@ PARTS = [
         "collision": "cylinder",
         "col_radius": 0.008, "col_length": 0.010,
         "r": 0.84, "g": 0.67, "b": 0.18,
-        "x": -0.16, "y": -0.20, "z": 0.905,
+        "x": -0.16, "y": -0.20, "z": 0.95,
     },
     {
         "name": "sun_gear",
@@ -102,7 +102,7 @@ PARTS = [
         "collision": "cylinder",
         "col_radius": 0.010, "col_length": 0.018,
         "r": 0.25, "g": 0.56, "b": 0.29,
-        "x": -0.085, "y": -0.12, "z": 0.909,
+        "x": -0.085, "y": -0.12, "z": 0.95,
     },
     {
         "name": "carrier",
@@ -110,7 +110,7 @@ PARTS = [
         "collision": "cylinder",
         "col_radius": 0.018, "col_length": 0.014,
         "r": 0.10, "g": 0.23, "b": 0.75,
-        "x": -0.085, "y": -0.18, "z": 0.907,
+        "x": -0.085, "y": -0.18, "z": 0.95,
     },
 ]
 
@@ -264,7 +264,7 @@ class PartSpawner(Node):
 
         for part in PARTS:
             _spawn_part(self, part)
-            time.sleep(2.0)
+            time.sleep(0.5)
 
         self.get_logger().info("All parts spawned.")
 

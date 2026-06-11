@@ -298,16 +298,12 @@ class AssemblyDemo(Node):
                 self.get_logger().warning("Assembly stopped by force limit and returned home")
             else:
                 self.get_logger().info("Assembly FSM complete")
-            if rclpy.ok():
-                rclpy.shutdown()
             return
 
         self.current_waypoint_index += 1
         if self.current_waypoint_index >= len(self.waypoints):
             self.completed = True
             self.get_logger().info("Assembly FSM complete")
-            if rclpy.ok():
-                rclpy.shutdown()
             return
 
         self._execute_current_waypoint()

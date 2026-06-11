@@ -178,7 +178,9 @@
   <xacro:macro name="ur_robot_motion_plugins"
                params="prefix joint_state_topic trajectory_topic
                        shoulder_pan_init shoulder_lift_init elbow_init
-                       wrist_1_init wrist_2_init wrist_3_init">
+                       wrist_1_init wrist_2_init wrist_3_init
+                       wrist_p_gain:=140.0 wrist_i_gain:=1.6 wrist_d_gain:=20.0
+                       wrist_cmd_max:=60.0 wrist_cmd_min:=-60.0">
     <gazebo>
       <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
         <topic>${joint_state_topic}</topic>
@@ -224,23 +226,23 @@
 
         <joint_name>${prefix}wrist_1_joint</joint_name>
         <initial_position>${wrist_1_init}</initial_position>
-        <position_p_gain>140.0</position_p_gain>
-        <position_i_gain>1.6</position_i_gain>
-        <position_d_gain>20.0</position_d_gain>
+        <position_p_gain>${wrist_p_gain}</position_p_gain>
+        <position_i_gain>${wrist_i_gain}</position_i_gain>
+        <position_d_gain>${wrist_d_gain}</position_d_gain>
         <position_i_min>-5.0</position_i_min>
         <position_i_max>5.0</position_i_max>
-        <position_cmd_min>-60.0</position_cmd_min>
-        <position_cmd_max>60.0</position_cmd_max>
+        <position_cmd_min>${wrist_cmd_min}</position_cmd_min>
+        <position_cmd_max>${wrist_cmd_max}</position_cmd_max>
 
         <joint_name>${prefix}wrist_2_joint</joint_name>
         <initial_position>${wrist_2_init}</initial_position>
-        <position_p_gain>135.0</position_p_gain>
-        <position_i_gain>1.4</position_i_gain>
-        <position_d_gain>19.0</position_d_gain>
+        <position_p_gain>${wrist_p_gain}</position_p_gain>
+        <position_i_gain>${wrist_i_gain}</position_i_gain>
+        <position_d_gain>${wrist_d_gain}</position_d_gain>
         <position_i_min>-5.0</position_i_min>
         <position_i_max>5.0</position_i_max>
-        <position_cmd_min>-60.0</position_cmd_min>
-        <position_cmd_max>60.0</position_cmd_max>
+        <position_cmd_min>${wrist_cmd_min}</position_cmd_min>
+        <position_cmd_max>${wrist_cmd_max}</position_cmd_max>
 
         <joint_name>${prefix}wrist_3_joint</joint_name>
         <initial_position>${wrist_3_init}</initial_position>
@@ -249,8 +251,8 @@
         <position_d_gain>13.0</position_d_gain>
         <position_i_min>-3.0</position_i_min>
         <position_i_max>3.0</position_i_max>
-        <position_cmd_min>-40.0</position_cmd_min>
-        <position_cmd_max>40.0</position_cmd_max>
+        <position_cmd_min>${wrist_cmd_min}</position_cmd_min>
+        <position_cmd_max>${wrist_cmd_max}</position_cmd_max>
       </plugin>
     </gazebo>
   </xacro:macro>
@@ -625,7 +627,9 @@
                        joint_limits_file kinematics_file physical_file visual_file
                        joint_state_topic trajectory_topic ft_topic
                        shoulder_pan_init shoulder_lift_init elbow_init wrist_1_init wrist_2_init wrist_3_init
-                       tool_kind">
+                       tool_kind
+                       wrist_p_gain:=140.0 wrist_i_gain:=1.6 wrist_d_gain:=20.0
+                       wrist_cmd_max:=60.0 wrist_cmd_min:=-60.0">
     <link name="${prefix}robot_mount"/>
     <joint name="${prefix}robot_mount_joint" type="fixed">
       <parent link="${parent}"/>
@@ -680,6 +684,16 @@
         <force_torque>
           <frame>child</frame>
           <measure_direction>parent_to_child</measure_direction>
+          <force>
+            <x><noise type="gaussian"><mean>0.0</mean><stddev>0.3</stddev></noise></x>
+            <y><noise type="gaussian"><mean>0.0</mean><stddev>0.3</stddev></noise></y>
+            <z><noise type="gaussian"><mean>0.0</mean><stddev>0.5</stddev></noise></z>
+          </force>
+          <torque>
+            <x><noise type="gaussian"><mean>0.0</mean><stddev>0.05</stddev></noise></x>
+            <y><noise type="gaussian"><mean>0.0</mean><stddev>0.05</stddev></noise></y>
+            <z><noise type="gaussian"><mean>0.0</mean><stddev>0.05</stddev></noise></z>
+          </torque>
         </force_torque>
       </sensor>
     </gazebo>
@@ -703,7 +717,12 @@
       elbow_init="${elbow_init}"
       wrist_1_init="${wrist_1_init}"
       wrist_2_init="${wrist_2_init}"
-      wrist_3_init="${wrist_3_init}"/>
+      wrist_3_init="${wrist_3_init}"
+      wrist_p_gain="${wrist_p_gain}"
+      wrist_i_gain="${wrist_i_gain}"
+      wrist_d_gain="${wrist_d_gain}"
+      wrist_cmd_max="${wrist_cmd_max}"
+      wrist_cmd_min="${wrist_cmd_min}"/>
   </xacro:macro>
 
 </robot>

@@ -98,9 +98,29 @@ def _pose_error(current: np.ndarray, target: np.ndarray) -> np.ndarray:
     pos_err = target[:3, 3] - current[:3, 3]
     r_err = target[:3, :3] @ current[:3, :3].T
     # log-map of the rotation error to an axis-angle 3-vector
-    angle = math.acos(max(-1.0, min(1.0, (np.trace(r_err) - 1.0) / 2.0)))
+    trace_val = max(-1.0, min(3.0, float(np.trace(r_err))))
+    angle = math.acos(max(-1.0, min(1.0, (trace_val - 1.0) / 2.0)))
     if abs(angle) < 1e-9:
         rot_err = np.zeros(3)
+    elif abs(angle - math.pi) < 1e-6:
+        # Near π: sin(angle) ≈ 0, use alternative axis extraction from
+        # the symmetric part of r_err to avoid division by zero.
+        # axis = normalize(diag(R) + 1) with sign from off-diagonals
+        diag = np.array([r_err[0, 0], r_err[1, 1], r_err[2, 2]])
+        axis = np.sqrt(np.maximum((diag + 1.0) / 2.0, 0.0))
+        # Resolve sign ambiguity from off-diagonal elements
+        if abs(axis[0]) > 1e-6:
+            if r_err[0, 1] + r_err[1, 0] < 0:
+                axis[1] = -axis[1]
+            if r_err[0, 2] + r_err[2, 0] < 0:
+                axis[2] = -axis[2]
+        elif abs(axis[1]) > 1e-6:
+            if r_err[1, 2] + r_err[2, 1] < 0:
+                axis[2] = -axis[2]
+        norm = np.linalg.norm(axis)
+        if norm > 1e-12:
+            axis /= norm
+        rot_err = math.pi * axis
     else:
         rx = r_err[2, 1] - r_err[1, 2]
         ry = r_err[0, 2] - r_err[2, 0]

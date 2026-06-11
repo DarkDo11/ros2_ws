@@ -101,10 +101,15 @@ def generate_launch_description():
     # Separate GUI process (server runs headless for camera rendering). Started
     # after a short delay so the server is up; its OpenGL/GLX context lives in a
     # different process and no longer kills the server-side camera render thread.
-    gz_gui = ExecuteProcess(
-        cmd=["gz", "sim", "-g", "-v", "2"],
-        output="screen",
-        condition=IfCondition(PythonExpression(["'", LaunchConfiguration("gz_gui"), "' == 'true'"])),
+    gz_gui = TimerAction(
+        period=3.0,
+        actions=[
+            ExecuteProcess(
+                cmd=["gz", "sim", "-g", "-v", "2"],
+                output="screen",
+                condition=IfCondition(PythonExpression(["'", LaunchConfiguration("gz_gui"), "' == 'true'"])),
+            ),
+        ],
     )
 
     move_group_launch = IncludeLaunchDescription(
@@ -209,7 +214,7 @@ def generate_launch_description():
                 "use_sim_time": use_sim_time,
                 "config_file": config_file,
                 "dry_run": planner_dry_run,
-                "start_delay_sec": 5.0,
+                "start_delay_sec": 20.0,
                 "visual_unload_demo": False,
                 "require_vision_status": True,
                 "ft_logic_enabled": True,
@@ -246,7 +251,6 @@ def generate_launch_description():
             DeclareLaunchArgument("run_state_machine", default_value="true"),
             DeclareLaunchArgument("planner_dry_run", default_value="true"),
             DeclareLaunchArgument("start_yasmin_viewer", default_value="true"),
-            DeclareLaunchArgument("gz_headless", default_value="false"),
             DeclareLaunchArgument("gz_gui", default_value="true"),
             DeclareLaunchArgument("gz_verbose", default_value="4"),
             SetEnvironmentVariable("RCUTILS_COLORIZED_OUTPUT", "1"),

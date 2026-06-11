@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import csv
 import os
+import atexit
 import threading
 import time
 from pathlib import Path
@@ -49,7 +50,7 @@ class PressController(Node):
         # FT subscriber — samples buffered during the capture window
         self._ft_samples: List[float] = []
         self._ft_capturing: bool = False
-        self._ft_lock = threading.Lock()
+        self._ft_lock = threading.Lock()  # guards _ft_capturing AND _ft_samples
         ft_topic = self.get_parameter("ft_topic").get_parameter_value().string_value
         # Own callback group so FT samples keep arriving while _handle_cycle
         # blocks on time.sleep() in the service callback (needs MultiThreadedExecutor).
@@ -65,6 +66,7 @@ class PressController(Node):
         )
         write_header = not csv_path.exists()
         self._csv_file = open(csv_path, "a", newline="", encoding="utf-8")  # noqa: SIM115
+        atexit.register(self._csv_file.close)
         self._csv_writer = csv.writer(self._csv_file)
         if write_header:
             self._csv_writer.writerow(_CSV_HEADER)
@@ -86,10 +88,9 @@ class PressController(Node):
         return self.get_parameter("demo_mode").get_parameter_value().bool_value
 
     def _ft_callback(self, msg: Wrench) -> None:
-        # list.append is GIL-safe; the lock guards only the start/end
-        # of the capture window, not every sample.
-        if self._ft_capturing:
-            self._ft_samples.append(msg.force.z)
+        with self._ft_lock:
+            if self._ft_capturing:
+                self._ft_samples.append(msg.force.z)
 
     def _publish(self, joint_name: str, positions, durations):
         msg = JointTrajectory()
@@ -137,15 +138,15 @@ class PressController(Node):
         # Open FT capture window before publishing so no samples are missed
         with self._ft_lock:
             self._ft_samples = []
-        self._ft_capturing = True
+            self._ft_capturing = True
 
         # Stroke: idle->down at t=0.5 s, hold until t=1.2 s, retract by t=2.2 s
         self._publish(joint_name, [0.0, request.stroke_m, 0.0], [0.5, 1.2, 2.2])
         time.sleep(2.2 + request.dwell_sec)
 
         # Close capture window
-        self._ft_capturing = False
         with self._ft_lock:
+            self._ft_capturing = False
             samples = list(self._ft_samples)
 
         if samples:

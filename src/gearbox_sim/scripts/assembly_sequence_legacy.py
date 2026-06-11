@@ -341,6 +341,8 @@ class AssemblyStateMachine(Node):
                 self._run_screw(screw_frame)
 
             self._move_part("ur5e_assembly", "lower_housing", self.config["assembly"]["output_frame"], precise=False)
+            self._set_part_frame("main_bearing", self.config["assembly"]["output_frame"])
+            self._set_part_frame("small_bearing", self.config["assembly"]["output_frame"])
             self._set_part_frame("housing", self.config["assembly"]["output_frame"])
             self._set_part_frame("cover", self.config["assembly"]["output_frame"])
             self._set_part_frame("ring_gear", self.config["assembly"]["output_frame"])

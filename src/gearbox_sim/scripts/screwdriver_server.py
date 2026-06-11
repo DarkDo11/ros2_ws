@@ -129,8 +129,11 @@ class ScrewdriverServer(Node):
 def main():
     rclpy.init()
     node = ScrewdriverServer()
+    from rclpy.executors import MultiThreadedExecutor
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     finally:
         node.destroy_node()
         rclpy.shutdown()

@@ -46,6 +46,7 @@ robots:
     trajectory_topic: /ur3e_screw/joint_trajectory
     tool_frame: ur3e_screw_tcp_frame
     reference_frame: world
+    tcp_offset_from_tool0_m: 0.252
     joint_names:
       - ur3e_screw_shoulder_pan_joint
       - ur3e_screw_shoulder_lift_joint

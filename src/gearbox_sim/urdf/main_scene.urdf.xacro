@@ -254,6 +254,11 @@
     wrist_1_init="-1.80"
     wrist_2_init="-1.57"
     wrist_3_init="0.0"
-    tool_kind="screwdriver"/>
+    tool_kind="screwdriver"
+    wrist_p_gain="45.0"
+    wrist_i_gain="0.5"
+    wrist_d_gain="7.0"
+    wrist_cmd_max="9.0"
+    wrist_cmd_min="-9.0"/>
 
 </robot>

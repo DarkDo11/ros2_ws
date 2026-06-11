@@ -70,7 +70,7 @@ class AssemblyStateMachine(Node):
         self.frame_timer = self.create_timer(0.1, self._publish_part_frames)
 
         start_delay = self.get_parameter("start_delay_sec").get_parameter_value().double_value
-        self.create_timer(start_delay, self._start_once)
+        self._start_timer = self.create_timer(start_delay, self._start_once)
         self._started = False
 
     def _wait_for_future(self, future, timeout_sec: float, description: str):
@@ -90,6 +90,7 @@ class AssemblyStateMachine(Node):
         if self._started:
             return
         self._started = True
+        self._start_timer.cancel()
         worker = threading.Thread(target=self._run_sequence, daemon=True)
         worker.start()
 
@@ -341,6 +342,8 @@ class AssemblyStateMachine(Node):
                 self._run_screw(screw_frame)
 
             self._move_part("ur5e_assembly", "lower_housing", self.config["assembly"]["output_frame"], precise=False)
+            self._set_part_frame("main_bearing", self.config["assembly"]["output_frame"])
+            self._set_part_frame("small_bearing", self.config["assembly"]["output_frame"])
             self._set_part_frame("housing", self.config["assembly"]["output_frame"])
             self._set_part_frame("cover", self.config["assembly"]["output_frame"])
             self._set_part_frame("ring_gear", self.config["assembly"]["output_frame"])
