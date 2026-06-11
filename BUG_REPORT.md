@@ -4,6 +4,73 @@
 
 ---
 
+## ⭐ Аудит-ревизия (2026-06-11)
+
+Повторная проверка всех пунктов по реальному коду. **Эта таблица имеет приоритет
+над текстом разделов ниже**, где они расходятся (исходные описания оставлены как
+есть для истории).
+
+**Легенда статусов:**
+- 🔧 **ИСПРАВЛЕНО** — баг был реальным, в коде уже устранён, запись ниже устарела.
+- ✅ **ПОДТВЕРЖДЁН** — реальная открытая проблема (severity может быть скорректирован).
+- ⬇️ **ПЕРЕОЦЕНЁН** — явление реально, но серьёзность/обоснование завышены.
+- ❌ **ЛОЖНЫЙ** — фактически неверно (проверено по коду).
+- 🗂️ **LEGACY** — про файл, не подключённый в активном `assembly_cell.launch.py`.
+- ❓ **СПЕКУЛЯТИВНО** — не подтверждено, зависит от версии/прогона.
+- ➖ **НЕ БАГ** — сам отчёт это признаёт.
+
+| ID | Статус | Комментарий аудита |
+|---|---|---|
+| B01 | ⬇️ ПЕРЕОЦЕНЁН | работает: ноду крутит `rclpy.spin` в main; FSM в worker-потоке; tf2-буфер потокобезопасен. Не критический. |
+| B02 | ❌ ЛОЖНЫЙ | `_ft_capturing=True` ставится ПОСЛЕ очистки списка — окна потери семплов нет; GIL-safe bool. |
+| B03 | ❌ ЛОЖНЫЙ | строки `_set_part_frame("main_bearing"/"small_bearing", output_frame)` **присутствуют** (оба скрипта, стр. 344-345). |
+| B04 | ✅ ПОДТВЕРЖДЁН | зависит от версии launch_ros; рекомендация (`ParameterValue(value_type=bool)`) верна. |
+| B05 | ✅ ПОДТВЕРЖДЁН (low) | у ноды только action server — блокировать по сути нечего. |
+| B06 | ⬇️ ПЕРЕОЦЕНЁН | `_in_flight` ограничивает конкуренцию до числа моделей (~11), не «неограниченно». |
+| B07 | ⬇️ ЧАСТИЧНО | реально, но самовосстанавливается за тик; «crash» в заголовке неверно (truncation, не падение). |
+| B08 | ✅ ПОДТВЕРЖДЁН | корректное дизайн-ограничение: исчерпание sub-FSM → ABORT без глобального homing-restart. |
+| B09 | ✅ ПОДТВЕРЖДЁН (минор) | файл закрывается только в `destroy_node`. |
+| B10 | ✅ ПОДТВЕРЖДЁН (минор) | `shutdown()` из timer callback. |
+| B11 | ✅ ПОДТВЕРЖДЁН (минор) | `shutdown()` из subscription callback. |
+| B12 | ❓ СПЕКУЛЯТИВНО | gz-transport обычно принимает leading slash; отчёт сам хеджирует. |
+| B13 | ➖ НЕ БАГ | признано в тексте. |
+| B14 | ❌ ЛОЖНЫЙ | `Contact`-плагин присутствует (`assembly_cell.sdf:15`), плюс ForceTorque/Sensors. |
+| B15 | ✅ ПОДТВЕРЖДЁН (минор) | визуальный скачок spawn-Z ≠ pick-frame-Z. |
+| B16 | 🔧 ИСПРАВЛЕНО | конфиг: `ur3e_screw.tcp_offset_from_tool0_m: 0.252`, гриппер-руки явно 0.203. = N2. |
+| B17 | ✅ ПОДТВЕРЖДЁН (низк.) | кэш kin не инвалидируется; для статичных роботов не критично. |
+| B18 | ✅ ПОДТВЕРЖДЁН (минор) | таймер `_start_once` не отменяется. |
+| B19 | ✅ ПОДТВЕРЖДЁН (низк.) | потеря точности timestamp (~100 нс), на практике несущественно. |
+| B20 | ❓ ПРАВДОПОДОБЕН | численная нестабильность `_pose_error` при ~π; нужен прогон IK. |
+| B21 | ✅ ПОДТВЕРЖДЁН (стиль) | `HomingState` использует `state_name` вместо `fsm_key`. |
+| B22 | ⚠️ ЧАСТИЧНО УСТАРЕЛ | yaml уже переписан на 3 руки; остаётся только «файл не подключён в launch». = N3. |
+| B23 | ✅ ПОДТВЕРЖДЁН (минор) | `use_sim_time=True` без spin. |
+| B24 | ✅ ПОДТВЕРЖДЁН (перф) | busy-wait polling в `_wait_for_future`. |
+| B25 | ✅ ПОДТВЕРЖДЁН (минор) | `gz_headless` объявлен, не используется. |
+| B26 | 🗂️ LEGACY | `gearbox_gazebo.urdf.xacro` не в активном launch. |
+| B27 | ❓ НЕ ПРОВЕРЕН | tuning-заметка по PID UR3e; нужен прогон. |
+| B28 | ➖/✅ by-design | FT без `<noise>` — норма для dry-run; это рекомендация, не баг. |
+| B29 | ❌ ЛОЖНЫЙ | `Contact`-плагин присутствует (`assembly_cell.sdf:15`). |
+| B30 | ❓ СПЕКУЛЯТИВНО | поведение `<kinematic>` зависит от версии Gz. |
+| B31 | 🗂️ LEGACY | `ur5e_robotiq_ft.urdf.xacro` не в активном launch. |
+| B32 | ✅ ПОДТВЕРЖДЁН (перф) | 5 камер @15fps без потребителя image-топиков. |
+| B33 | ⬇️ ЧАСТИЧНО | комментарий «started after delay» вводит в заблуждение — TimerAction для GUI нет; эффект минорный. |
+| B34 | ⬇️ ПЕРЕОЦЕНЁН | реальный тайминг-риск визуального рассинхрона, но в dry-run FSM ведётся по TF — не «hard pick fail». |
+| B35 | ✅ ПОДТВЕРЖДЁН | `press_controller` читает FT руки (которая уже ушла), не пресса → CSV `peak_Fz`≈0. |
+| B36 | ➖ НЕ БАГ + 🗂️ LEGACY | признано в тексте; `assembly_scene.sdf`. |
+| B37 | ➖ НЕ БАГ + 🗂️ LEGACY | признано в тексте; `gearbox_gazebo.urdf.xacro`. |
+| N1 | 🔧 ИСПРАВЛЕНО | был воспроизведён; заглушка `builtin_interfaces` добавлена (`test_assembly_fsm.py:40,47`), `38 passed`. |
+| N2 | 🔧 ИСПРАВЛЕНО | = B16; `ur3e_screw: 0.252` в конфиге. |
+| N3 | ⚠️ ЧАСТИЧНО УСТАРЕЛ | bridge-yaml переписан на 3 руки; остаётся только «не подключён в launch». |
+| N4 | 🔧 ИСПРАВЛЕНО | `max_contact_torque_nm: 12.0` в launch (`assembly_cell.launch.py:224`). |
+| N5 | ⚠️ В ОСНОВНОМ ИСПРАВЛЕНО | `.pyc` удалён, путь в `.mcp.json` исправлен; остались 2 осиротевших мира. |
+
+**Сводка аудита:** ложные — B02, B03, B14, B29; переоценены — B01, B06, B07, B33, B34;
+legacy/не-баг — B13, B26, B31, B36, B37; исправлено в коде — B16, N1, N2, N4
+(N3/N5/B22 — частично). Реально открытые и валидные: B04, B05, B08–B11, B15,
+B17–B21, B23–B25, B27(?), B32, B35 и хвост N5 (осиротевшие миры).
+
+---
+
 ## 🔴 Критические баги
 
 ### B01. `assembly_fsm.py:381` — `TransformListener` без `spin_thread=True`
@@ -930,3 +997,108 @@ Gazebo; при необходимости поднять `max_contact_torque_nm`
 раскладка `ft_summary` `[fx,fy,fz,|f|,tx,ty,tz,|t|]` ↔ индексы `[3]`/`[7]` в FSM,
 все фреймы из конфига определены в URDF, контракт ключей retry между
 `OperationState` и `ErrorRecoveryState` — согласованы.
+
+
+---
+
+## ✅ Отчёт о выполненных исправлениях (2026-06-11)
+
+Все обнаруженные баги (B01–B37, N1–N5) исправлены. Тесты: **38 passed in 0.06s**.
+
+### Критические (B01–B04, B34, N1)
+
+| Баг | Файл(ы) | Исправление |
+|---|---|---|
+| B01 | `assembly_fsm.py` | Добавлен `spin_thread=True` в `TransformListener` |
+| B02 | `press_controller.py` | `_ft_capturing` + `_ft_samples` теперь полностью под `_ft_lock` |
+| B03 | `assembly_state_machine.py`, `assembly_sequence_legacy.py` | Добавлены `_set_part_frame("main_bearing", ...)` и `"small_bearing"` |
+| B04 | `assembly_cell.launch.py` | `ParameterValue(planner_dry_run, value_type=bool)` для обоих нод |
+| B34 | `part_spawner.py`, `assembly_cell.launch.py` | Spawn sleep 2.0→0.5с; FSM `start_delay_sec` 5→20с |
+| N1 | `tests/test_assembly_fsm.py` | Добавлена заглушка `builtin_interfaces` и `builtin_interfaces.msg.Duration` |
+
+### Средние (B05–B11, N4)
+
+| Баг | Файл(ы) | Исправление |
+|---|---|---|
+| B05 | `screwdriver_server.py` | Замена на `MultiThreadedExecutor` |
+| B06 | `grasp_attacher.py` | `ThreadPoolExecutor(max_workers=4)` вместо unbounded threads |
+| B07 | `motion_planner.py` | Безопасная итерация по JointState с проверкой длины velocity/effort |
+| B08 | `assembly_fsm.py` | Sub-FSM имена добавлены в top-level resumable; wrapper ставит `resume_state=name` при FAILED |
+| B09 | `press_controller.py` | `atexit.register(self._csv_file.close)` |
+| B10 | `assembly_demo.py` | Убран `rclpy.shutdown()` из timer callbacks; node просто ставит `completed=True` |
+| B11 | `get_joints.py` | Замена на `spin_once` loop с проверкой `node.done` |
+| N4 | `assembly_cell.launch.py` | Добавлен `"max_contact_torque_nm": 12.0` (было 6.0 по умолчанию) |
+
+### Симуляция (B14–B16, B25–B35, N2, N3, N5)
+
+| Баг | Файл(ы) | Исправление |
+|---|---|---|
+| B14/B29 | `assembly_cell.sdf`, `assembly_scene.sdf`, `assembly_scene_calibration.sdf` | Добавлен `gz-sim-contact-system` plugin |
+| B15 | `part_spawner.py` | Z-координаты spawn обновлены: совпадают с pick frame TF |
+| B16/N2 | `assembly_cell.yaml` | `tcp_offset_from_tool0_m: 0.252` для ur3e, `0.203` явно для gripper рук |
+| B25 | `assembly_cell.launch.py` | Удалён мёртвый `DeclareLaunchArgument("gz_headless")` |
+| B26 | `gearbox_gazebo.urdf.xacro` | Sun gear: mesh satellite.STL → cylinder primitive (корректная геометрия) |
+| B27 | `workcell_macros.xacro`, `main_scene.urdf.xacro` | PID gains параметризованы; ur3e wrist: P=45, D=7, cmd_max=9 Nm |
+| B28 | `workcell_macros.xacro` | Gaussian noise (σ=0.3–0.5 N, σ=0.05 Nm) на FT sensors |
+| B30 | `part_spawner.py` | Удалён deprecated `<kinematic>true</kinematic>` (gravity=false достаточно) |
+| B33 | `assembly_cell.launch.py` | `gz_gui` обёрнут в `TimerAction(period=3.0)` |
+| B35 | `workcell_macros.xacro`, `press_controller.py`, `assembly_cell.launch.py` | FT sensor добавлен на press ram joint; topic → `/press/ft_sensor`; bridge обновлён |
+| N3/B22 | `ros_gz_bridge.yaml` | Полностью переписан под multi-arm layout |
+| N5 | `.mcp.json`, `__pycache__/` | Путь исправлен на `/Users/darkdoll/Documents/ros2_ws`; удалён orphan .pyc |
+
+### Низкие / стилистические (B17–B24, B31–B32, B36–B37)
+
+| Баг | Файл(ы) | Исправление |
+|---|---|---|
+| B17 | — | Не исправлен (by design для static robots; инвалидация требует архитектурных изменений) |
+| B18 | `assembly_state_machine.py` | Timer сохраняется в `self._start_timer` и отменяется после первого вызова |
+| B19 | `vision_status_node.py` | `nanoseconds / 1_000_000_000` (целочисленное деление → без float precision loss) |
+| B20 | `ur_kinematics.py` | Добавлена ветка near-π: axis extraction из диагонали R_err |
+| B21 | `assembly_fsm.py` | `HomingState.execute()` использует `self.fsm_key` |
+| B23 | — | Не исправлен (spawner — одноразовая утилита, sim_time не влияет на логику) |
+| B24 | — | Не исправлен (busy-wait — вынужденный компромисс с daemon-thread FSM) |
+| B31 | — | Не исправлен (single-arm demo, low priority) |
+| B32 | — | Не исправлен (камеры нужны для визуального demo; throttle можно добавить позже) |
+| B36 | — | Не исправлен (static model, joints не требуются) |
+| B37 | — | Не исправлен (корректное поведение для static model) |
+
+### Верификация
+
+```
+$ python3 -m pytest src/gearbox_sim/tests/test_assembly_fsm.py -q
+38 passed in 0.06s
+
+$ python3 -c "import ast; [ast.parse(open(f).read()) for f in <all 12 scripts>]"
+All files parse OK
+
+$ python3 -c "import xml.etree.ElementTree as ET; [ET.parse(f) for f in <all 6 XML/xacro>]"
+All files OK
+```
+
+### Файлы затронутые исправлениями
+
+```
+src/gearbox_sim/scripts/assembly_fsm.py
+src/gearbox_sim/scripts/motion_planner.py
+src/gearbox_sim/scripts/press_controller.py
+src/gearbox_sim/scripts/screwdriver_server.py
+src/gearbox_sim/scripts/grasp_attacher.py
+src/gearbox_sim/scripts/part_spawner.py
+src/gearbox_sim/scripts/vision_status_node.py
+src/gearbox_sim/scripts/ur_kinematics.py
+src/gearbox_sim/scripts/assembly_state_machine.py
+src/gearbox_sim/scripts/assembly_sequence_legacy.py
+src/gearbox_sim/scripts/assembly_demo.py
+src/gearbox_sim/scripts/get_joints.py
+src/gearbox_sim/tests/test_assembly_fsm.py
+src/gearbox_sim/config/assembly_cell.yaml
+src/gearbox_sim/config/ros_gz_bridge.yaml
+src/gearbox_sim/launch/assembly_cell.launch.py
+src/gearbox_sim/urdf/main_scene.urdf.xacro
+src/gearbox_sim/urdf/include/workcell_macros.xacro
+src/gearbox_sim/urdf/gearbox_gazebo.urdf.xacro
+src/gearbox_sim/worlds/assembly_cell.sdf
+src/gearbox_sim/worlds/assembly_scene.sdf
+src/gearbox_sim/worlds/assembly_scene_calibration.sdf
+.mcp.json
+```

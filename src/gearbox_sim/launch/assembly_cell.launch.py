@@ -76,6 +76,7 @@ def generate_launch_description():
             "/ur5e_press/ft_sensor@geometry_msgs/msg/Wrench[gz.msgs.Wrench",
             "/ur5e_assembly/ft_sensor@geometry_msgs/msg/Wrench[gz.msgs.Wrench",
             "/ur3e_screw/ft_sensor@geometry_msgs/msg/Wrench[gz.msgs.Wrench",
+            "/press/ft_sensor@geometry_msgs/msg/Wrench[gz.msgs.Wrench",
             "/ur5e_press/joint_trajectory@trajectory_msgs/msg/JointTrajectory]gz.msgs.JointTrajectory",
             "/ur5e_assembly/joint_trajectory@trajectory_msgs/msg/JointTrajectory]gz.msgs.JointTrajectory",
             "/ur3e_screw/joint_trajectory@trajectory_msgs/msg/JointTrajectory]gz.msgs.JointTrajectory",
@@ -198,7 +199,7 @@ def generate_launch_description():
             {
                 "use_sim_time": use_sim_time,
                 "config_file": config_file,
-                "dry_run": planner_dry_run,
+                "dry_run": ParameterValue(planner_dry_run, value_type=bool),
             }
         ],
     )
@@ -213,13 +214,14 @@ def generate_launch_description():
             {
                 "use_sim_time": use_sim_time,
                 "config_file": config_file,
-                "dry_run": planner_dry_run,
+                "dry_run": ParameterValue(planner_dry_run, value_type=bool),
                 "start_delay_sec": 20.0,
                 "visual_unload_demo": False,
                 "require_vision_status": True,
                 "ft_logic_enabled": True,
                 "require_ft_samples": False,
                 "max_contact_force_n": 85.0,
+                "max_contact_torque_nm": 12.0,
             }
         ],
     )

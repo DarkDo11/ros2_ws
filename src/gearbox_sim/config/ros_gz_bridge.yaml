@@ -1,23 +1,76 @@
+# Bridge configuration for assembly_cell (multi-arm setup).
+# Note: assembly_cell.launch.py passes bridge topics as CLI arguments;
+# this YAML is for reference or standalone use with:
+#   ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=<this file>
+
 - ros_topic_name: "/clock"
   gz_topic_name: "/clock"
   ros_type_name: "rosgraph_msgs/msg/Clock"
   gz_type_name: "gz.msgs.Clock"
   direction: GZ_TO_ROS
 
-- ros_topic_name: "/ur5e/joint_states_gz"
-  gz_topic_name: "/ur5e/joint_states_gz"
+- ros_topic_name: "/joint_states"
+  gz_topic_name: "/joint_states"
   ros_type_name: "sensor_msgs/msg/JointState"
   gz_type_name: "gz.msgs.Model"
   direction: GZ_TO_ROS
 
-- ros_topic_name: "/ur5e/ft_sensor"
-  gz_topic_name: "/ur5e/ft_sensor"
+- ros_topic_name: "/ur5e_press/ft_sensor"
+  gz_topic_name: "/ur5e_press/ft_sensor"
   ros_type_name: "geometry_msgs/msg/Wrench"
   gz_type_name: "gz.msgs.Wrench"
   direction: GZ_TO_ROS
 
-- ros_topic_name: "/ur5e/joint_trajectory"
-  gz_topic_name: "/ur5e/joint_trajectory"
+- ros_topic_name: "/ur5e_assembly/ft_sensor"
+  gz_topic_name: "/ur5e_assembly/ft_sensor"
+  ros_type_name: "geometry_msgs/msg/Wrench"
+  gz_type_name: "gz.msgs.Wrench"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/ur3e_screw/ft_sensor"
+  gz_topic_name: "/ur3e_screw/ft_sensor"
+  ros_type_name: "geometry_msgs/msg/Wrench"
+  gz_type_name: "gz.msgs.Wrench"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/ur5e_press/joint_trajectory"
+  gz_topic_name: "/ur5e_press/joint_trajectory"
+  ros_type_name: "trajectory_msgs/msg/JointTrajectory"
+  gz_type_name: "gz.msgs.JointTrajectory"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/ur5e_assembly/joint_trajectory"
+  gz_topic_name: "/ur5e_assembly/joint_trajectory"
+  ros_type_name: "trajectory_msgs/msg/JointTrajectory"
+  gz_type_name: "gz.msgs.JointTrajectory"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/ur3e_screw/joint_trajectory"
+  gz_topic_name: "/ur3e_screw/joint_trajectory"
+  ros_type_name: "trajectory_msgs/msg/JointTrajectory"
+  gz_type_name: "gz.msgs.JointTrajectory"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/ur3e_screw_tool/joint_trajectory"
+  gz_topic_name: "/ur3e_screw_tool/joint_trajectory"
+  ros_type_name: "trajectory_msgs/msg/JointTrajectory"
+  gz_type_name: "gz.msgs.JointTrajectory"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/press/joint_trajectory"
+  gz_topic_name: "/press/joint_trajectory"
+  ros_type_name: "trajectory_msgs/msg/JointTrajectory"
+  gz_type_name: "gz.msgs.JointTrajectory"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/ur5e_press_gripper/joint_trajectory"
+  gz_topic_name: "/ur5e_press_gripper/joint_trajectory"
+  ros_type_name: "trajectory_msgs/msg/JointTrajectory"
+  gz_type_name: "gz.msgs.JointTrajectory"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/ur5e_assembly_gripper/joint_trajectory"
+  gz_topic_name: "/ur5e_assembly_gripper/joint_trajectory"
   ros_type_name: "trajectory_msgs/msg/JointTrajectory"
   gz_type_name: "gz.msgs.JointTrajectory"
   direction: ROS_TO_GZ

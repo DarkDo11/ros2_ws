@@ -28,7 +28,7 @@ class PressController(Node):
         super().__init__("press_controller")
         self.declare_parameter("trajectory_topic", "/press/joint_trajectory")
         self.declare_parameter("joint_name", "press_ram_joint")
-        self.declare_parameter("ft_topic", "/ur5e_press/ft_sensor")
+        self.declare_parameter("ft_topic", "/press/ft_sensor")
         self.declare_parameter("demo_mode", True)
         self.declare_parameter("require_safety_interlock", False)
         self.declare_parameter("safety_interlock_closed", True)

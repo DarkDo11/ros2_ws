@@ -98,9 +98,9 @@
 
   <xacro:macro name="sun_collision_mesh" params="">
     <collision>
-      <origin xyz="${-0.006872 * geom_factor} ${-0.006872 * geom_factor} ${-0.030400 * geom_factor}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find gearbox_sim)/meshes/satellite.STL" scale="${scale} ${scale} ${scale}"/>
+        <cylinder radius="${0.0070 * geom_factor}" length="${0.040 * geom_factor}"/>
       </geometry>
     </collision>
   </xacro:macro>
@@ -227,9 +227,9 @@
     <link name="sun_gear">
       <xacro:cylinder_inertia mass="${0.15 * mass_factor}" radius="${0.0070 * geom_factor}" length="${0.040 * geom_factor}"/>
       <visual>
-        <origin xyz="${-0.006872 * geom_factor} ${-0.006872 * geom_factor} ${-0.030400 * geom_factor}" rpy="0 0 0"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="file://$(find gearbox_sim)/meshes/satellite.STL" scale="${scale} ${scale} ${scale}"/>
+          <cylinder radius="${0.0070 * geom_factor}" length="${0.040 * geom_factor}"/>
         </geometry>
         <material name="blue"/>
       </visual>

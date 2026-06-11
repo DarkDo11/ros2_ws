@@ -36,13 +36,15 @@ for m in ["geometry_msgs", "geometry_msgs.msg",
           "sensor_msgs", "sensor_msgs.msg",
           "std_msgs", "std_msgs.msg",
           "trajectory_msgs", "trajectory_msgs.msg",
-          "action_msgs", "action_msgs.msg"]:
+          "action_msgs", "action_msgs.msg",
+          "builtin_interfaces", "builtin_interfaces.msg"]:
     _make_stub_module(m)
 
 geometry_msg_mod = sys.modules["geometry_msgs.msg"]
 geometry_msg_mod.TransformStamped = MagicMock
 geometry_msg_mod.Transform = MagicMock
 geometry_msg_mod.Quaternion = MagicMock
+sys.modules["builtin_interfaces.msg"].Duration = MagicMock
 sys.modules["tf2_ros"].Buffer = MagicMock
 sys.modules["tf2_ros"].TransformBroadcaster = MagicMock
 sys.modules["tf2_ros"].TransformListener = MagicMock

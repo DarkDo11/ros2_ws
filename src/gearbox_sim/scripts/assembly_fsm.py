@@ -926,6 +926,23 @@ class AssemblyFsmNode(Node):
         recovery_transitions[FAILED] = FAILED
         self._add_state(sm, f"{name}_ERROR_RECOVERY", recovery, recovery_transitions)
         self._set_start_state(sm, states[0][0])
+
+        # When this sub-FSM exhausts retries and returns FAILED, set resume_state
+        # to the sub-FSM name so top-level ERROR_RECOVERY can restart it.
+        _orig_call = sm.__call__ if callable(sm) else None
+
+        def _subfsm_wrapper(blackboard):
+            outcome = _orig_call(blackboard) if _orig_call else sm(blackboard)
+            if outcome == FAILED:
+                blackboard["resume_state"] = name
+                blackboard["recovery_attempts"].pop(
+                    blackboard.get("resume_state", ""), None
+                )
+            return outcome
+
+        if _orig_call:
+            sm.__call__ = _subfsm_wrapper
+
         return sm
 
     def _build_press_subfsm(self) -> StateMachine:
@@ -1334,7 +1351,14 @@ class AssemblyFsmNode(Node):
         top_recovery = ErrorRecoveryState(
             self,
             "ERROR_RECOVERY",
-            ["HOMING", "PICK_ASSEMBLY_STACK", "PLACE_ASSEMBLY_STACK_AT_OUTPUT"],
+            [
+                "HOMING",
+                "PRESS_SUBFSM",
+                "ASSEMBLY_SUBFSM",
+                "SCREW_SUBFSM",
+                "PICK_ASSEMBLY_STACK",
+                "PLACE_ASSEMBLY_STACK_AT_OUTPUT",
+            ],
         )
         self._add_state(
             sm,
@@ -1342,6 +1366,9 @@ class AssemblyFsmNode(Node):
             top_recovery,
             {
                 "HOMING": "HOMING",
+                "PRESS_SUBFSM": "PRESS_SUBFSM",
+                "ASSEMBLY_SUBFSM": "ASSEMBLY_SUBFSM",
+                "SCREW_SUBFSM": "SCREW_SUBFSM",
                 "PICK_ASSEMBLY_STACK": "PICK_ASSEMBLY_STACK",
                 "PLACE_ASSEMBLY_STACK_AT_OUTPUT": "PLACE_ASSEMBLY_STACK_AT_OUTPUT",
                 FAILED: "ABORT",

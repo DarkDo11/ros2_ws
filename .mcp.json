@@ -6,7 +6,7 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/home/dark/ros2_ws"
+        "/Users/darkdoll/Documents/ros2_ws"
       ],
       "env": {}
     }

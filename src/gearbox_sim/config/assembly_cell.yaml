@@ -4,6 +4,7 @@ robots:
     trajectory_topic: /ur5e_press/joint_trajectory
     tool_frame: ur5e_press_tcp_frame
     reference_frame: world
+    tcp_offset_from_tool0_m: 0.203
     joint_names:
       - ur5e_press_shoulder_pan_joint
       - ur5e_press_shoulder_lift_joint
@@ -25,6 +26,7 @@ robots:
     trajectory_topic: /ur5e_assembly/joint_trajectory
     tool_frame: ur5e_assembly_tcp_frame
     reference_frame: world
+    tcp_offset_from_tool0_m: 0.203
     joint_names:
       - ur5e_assembly_shoulder_pan_joint
       - ur5e_assembly_shoulder_lift_joint

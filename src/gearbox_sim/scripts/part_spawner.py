@@ -173,7 +173,6 @@ def _build_sdf(part: dict) -> str:
         f'<iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>'
         f'</inertial>'
         f'<gravity>false</gravity>'
-        f'<kinematic>true</kinematic>'
         f'<visual name="vis">'
         f'<geometry>'
         f'{visual_geom}'
